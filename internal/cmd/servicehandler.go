@@ -13,9 +13,11 @@ import (
 )
 
 // serviceHandler shuts services down when the done channel is closed.
+//
+// TODO(e.burkov):  Use [service.SignalHandler] instead.
 type serviceHandler struct {
 	done            <-chan struct{}
-	services        []service.Interface
+	services        []service.Shutdowner
 	shutdownTimeout time.Duration
 }
 
@@ -34,7 +36,7 @@ func newServiceHandler(done <-chan struct{}, timeout time.Duration) (h *serviceH
 // add adds a services to h.
 //
 // It must not be called concurrently with [serviceHandler.handle].
-func (h *serviceHandler) add(svcs ...service.Interface) {
+func (h *serviceHandler) add(svcs ...service.Shutdowner) {
 	h.services = append(h.services, svcs...)
 }
 

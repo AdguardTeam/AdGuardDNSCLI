@@ -9,18 +9,8 @@
 #     current tag, and the script merely checks, that the current commit is
 #     properly tagged.
 #
-#  *  For prerelease beta versions, "v0.123.4-b.5".  This version should be the
-#     one in the current tag, and the script merely checks, that the current
-#     commit is properly tagged.
-#
 #  *  For prerelease alpha versions (aka snapshots), "v0.123.4-a.6+a1b2c3d4".
 #
-# BUG(a.garipov): The script currently can't differentiate between beta tags and
-# release tags if they are on the same commit, so the beta tag **must** be
-# pushed and built **before** the release tag is pushed.
-#
-# TODO(a.garipov): The script currently doesn't handle release branches, so it
-# must be modified once we have those.
 
 verbose="${VERBOSE:-0}"
 readonly verbose
@@ -30,24 +20,6 @@ if [ "$verbose" -gt '0' ]; then
 fi
 
 set -e -f -u
-
-# get_last_minor_zero returns the last new minor release.
-get_last_minor_zero() {
-	# List all tags.  Then, select those that fit the pattern of a new minor
-	# release: a semver version with the patch part set to zero.
-	#
-	# Then, sort them first by the first field ("1"), starting with the
-	# second character to skip the "v" prefix (".2"), and only spanning the
-	# first field (",1").  The sort is numeric and reverse ("nr").
-	#
-	# Then, sort them by the second field ("2"), and only spanning the
-	# second field (",2").  The sort is also numeric and reverse ("nr").
-	#
-	# Finally, get the top (that is, most recent) version.
-	git tag | grep -e 'v[0-9]\+\.[0-9]\+\.0$' \
-		| sort -k 1.2,1nr -k 2,2nr -t '.' \
-		| head -n 1
-}
 
 channel="${CHANNEL:?please set CHANNEL}"
 readonly channel
@@ -109,8 +81,8 @@ case "$channel" in
 	version="${current_branch#rc-}-rc.$(git rev-list --count "$last_tag"..HEAD)"
 	;;
 *)
-	echo "invalid channel '$channel', supported values are\
-		'development', 'edge', 'beta', 'release' and 'candidate'" 1>&2
+	echo "invalid channel '$channel', supported values are \
+		'development', 'edge', 'release' and 'candidate'" 1>&2
 	exit 1
 	;;
 esac
