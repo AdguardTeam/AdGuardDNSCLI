@@ -64,6 +64,7 @@
                     --output '.' \
                     --progress 'plain' \
                     --target 'tester-exporter' \
+                    -f ./docker/ci.Dockerfile \
                     .
 
                 exit_code="$(cat ./test-reports/test-exit-code.txt)"
