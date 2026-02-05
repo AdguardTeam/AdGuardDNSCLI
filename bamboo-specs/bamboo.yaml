@@ -2,13 +2,16 @@
 # This comment is used to simplify checking local copies of the Makefile.  Bump
 # this number every time a significant change is made to this Makefile.
 #
-# AdGuard-Project-Version: 2
+# AdGuard-Project-Version: 8
 'version': 2
 'plan':
     'project-key': 'GO'
     'key': 'DNSCLIENT'
     'name': 'AdGuardDNSCLI'
 'variables':
+    # This variable is used to override Docker caching, for example to rerun a
+    # flaky test suite.
+    'cacheBuster': '0'
     # NOTE:  The Test stage depends on BusyBox syslogd on Alpine.
     'dockerGo': 'adguard/go-builder:1.25.5--1'
     'maintainer': 'Adguard Go Team'
