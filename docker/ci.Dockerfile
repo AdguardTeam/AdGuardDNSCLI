@@ -110,9 +110,9 @@ export GOMAXPROCS=2
 
 export TEST_AGDCSLOG=1
 
-# Run syslogd in the foreground (-n) so its PID can be captured,
-# and enable the in-memory ring buffer (-C) so that logread can
-# read messages during integration tests.
+# Run syslogd in the foreground (-n) so its PID can be captured, and enable the
+# in-memory ring buffer (-C) so that logread can read messages during
+# integration tests.
 syslogd -n -C &
 
 syslogd_pid="$!"
