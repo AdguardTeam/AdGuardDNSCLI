@@ -150,3 +150,52 @@ FROM scratch AS tester-exporter
 ARG CACHE_BUSTER=0
 ARG TEST_REPORTS_DIR=/test-reports
 COPY --from=tester "$TEST_REPORTS_DIR" "$TEST_REPORTS_DIR"
+
+# The builder stage is used to build release artifacts.  It imports GPG keys and
+# runs the build-release target.  Real BRANCH and REVISION must be used here.
+FROM dependencies AS builder
+ARG ARCH=""
+ARG BRANCH=master
+ARG CACHE_BUSTER=0
+ARG CHANNEL=development
+ARG GPG_KEY_PASSPHRASE
+ARG GPG_SECRET_KEY
+ARG OS=""
+ARG REVISION=0000000000000000000000000000000000000000
+ARG SIGNER_API_KEY
+ARG SOURCE_DATE_EPOCH=0
+ARG VERSION=""
+ADD . /app
+WORKDIR /app
+RUN \
+	--mount=type=cache,id=gocache,target=/root/.cache/go-build \
+	--mount=type=cache,id=gopath,target=/go \
+<<-'EOF'
+set -e -f -u -x
+
+# Import GPG key if provided
+if [ "${GPG_SECRET_KEY:-}" != '' ]; then
+    echo "$GPG_SECRET_KEY" | awk '{ gsub(/\\n/, "\n"); print; }' | gpg --import --batch --yes
+fi
+
+make \
+	ARCH="${ARCH}" \
+	BRANCH="${BRANCH}" \
+	CHANNEL="${CHANNEL}" \
+	GPG_KEY_PASSPHRASE="${GPG_KEY_PASSPHRASE}" \
+	OS="${OS}" \
+	PARALLELISM=1 \
+	REVISION="${REVISION}" \
+	SOURCE_DATE_EPOCH="$SOURCE_DATE_EPOCH" \
+	SIGNER_API_KEY="${SIGNER_API_KEY}" \
+	VERBOSE=2 \
+	VERSION="${VERSION}" \
+	build-release \
+	;
+EOF
+
+# builder-exporter exports the build artifacts to the host machine so that they
+# could be published.  This stage should only be used in a CI.
+FROM scratch AS builder-exporter
+ARG CACHE_BUSTER=0
+COPY --from=builder /app/dist /dist

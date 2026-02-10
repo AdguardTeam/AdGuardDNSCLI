@@ -126,22 +126,11 @@
         'pattern': '${bamboo.name}/dist/version.txt'
         'shared': true
         'required': true
-    'docker':
-        'image': '${bamboo.dockerGo}'
-        'volumes':
-            '${system.GO_CACHE_DIR}': '${bamboo.cacheGo}'
-            '${system.GO_PKG_CACHE_DIR}': '${bamboo.cacheGoPkg}'
     'key': 'ART'
     'other':
          'clean-working-dir': true
     'tasks':
       - 'checkout':
-            'repository': 'bamboo-deploy-publisher'
-            # The paths are always relative to the working directory.
-            'path': 'bamboo-deploy-publisher'
-            'force-clean-build': true
-      - 'checkout':
-            'path': '${bamboo.name}'
             'force-clean-build': true
       - 'script':
             'interpreter': 'SHELL'
@@ -154,19 +143,24 @@
               # Follow the working repository path.
               cd "${bamboo.name}"
 
-              # TODO(e.burkov):  Consider using more POSIX-compliant printf.
-              echo "${bamboo.gpgSecretKeyPart1}${bamboo.gpgSecretKeyPart2}"\
-                  | awk '{ gsub(/\\n/, "\n"); print; }'\
-                  | gpg --import --batch --yes
+              docker info
 
-              make\
-                  CHANNEL=${bamboo.channel}\
-                  GPG_KEY_PASSPHRASE=${bamboo.gpgPassword}\
-                  DEPLOY_SCRIPT_PATH="../bamboo-deploy-publisher/deploy.sh"\
-                  SIGNER_API_KEY="${bamboo.adguardDnsClientWinSignerSecretApiKey}"\
-                  PARALLELISM=1\
-                  VERBOSE=2\
-                  build-release
+              docker build \
+                  --build-arg "BASE_IMAGE=${bamboo_dockerGo}" \
+                  --build-arg "BRANCH=${bamboo_planRepository_branchName}" \
+                  --build-arg "CACHE_BUSTER=${bamboo_cacheBuster}" \
+                  --build-arg "CHANNEL=${bamboo_channel}" \
+                  --build-arg "GPG_SECRET_KEY=${bamboo_gpgSecretKeyPart1}${bamboo_gpgSecretKeyPart2}" \
+                  --build-arg "GPG_KEY_PASSPHRASE=${bamboo_gpgPassword}" \
+                  --build-arg "REVISION=${bamboo_repository_revision_number}" \
+                  --build-arg "SIGNER_API_KEY=${bamboo_adguardDnsClientWinSignerSecretApiKey}" \
+                  --build-arg "SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)" \
+                  --build-arg "VERSION=${bamboo_buildNumber}" \
+                  --output '.' \
+                  --progress 'plain' \
+                  --target 'builder-exporter' \
+                  -f ./docker/ci.Dockerfile \
+                  .
 
 'ArtifactQA':
     'artifacts':
@@ -194,22 +188,11 @@
         'pattern': '${bamboo.name}/dist/checksums.txt'
         'shared': true
         'required': true
-    'docker':
-        'image': '${bamboo.dockerGo}'
-        'volumes':
-            '${system.GO_CACHE_DIR}': '${bamboo.cacheGo}'
-            '${system.GO_PKG_CACHE_DIR}': '${bamboo.cacheGoPkg}'
     'key': 'ARTQA'
     'other':
          'clean-working-dir': true
     'tasks':
       - 'checkout':
-            'repository': 'bamboo-deploy-publisher'
-            # The paths are always relative to the working directory.
-            'path': 'bamboo-deploy-publisher'
-            'force-clean-build': true
-      - 'checkout':
-            'path': '${bamboo.name}'
             'force-clean-build': true
       - 'script':
             'interpreter': 'SHELL'
@@ -222,33 +205,47 @@
               # Follow the working repository path.
               cd "${bamboo.name}"
 
-              # TODO(e.burkov):  Consider using more POSIX-compliant printf.
-              echo "${bamboo.gpgSecretKeyPart1}${bamboo.gpgSecretKeyPart2}"\
-                  | awk '{ gsub(/\\n/, "\n"); print; }'\
-                  | gpg --import --batch --yes
+              docker info
 
-              make\
-                  ARCH="amd64"\
-                  OS="darwin linux"\
-                  CHANNEL=${bamboo.channel}\
-                  GPG_KEY_PASSPHRASE=${bamboo.gpgPassword}\
-                  DEPLOY_SCRIPT_PATH="../bamboo-deploy-publisher/deploy.sh"\
-                  SIGNER_API_KEY="${bamboo.adguardDnsClientWinSignerSecretApiKey}"\
-                  PARALLELISM=1\
-                  VERBOSE=2\
-                  build-release
+              # Build darwin and linux with amd64 architecture
+              docker build \
+                  --build-arg "BASE_IMAGE=${bamboo_dockerGo}" \
+                  --build-arg "BRANCH=${bamboo_planRepository_branchName}" \
+                  --build-arg "CACHE_BUSTER=${bamboo_cacheBuster}" \
+                  --build-arg "CHANNEL=${bamboo_channel}" \
+                  --build-arg "GPG_SECRET_KEY=${bamboo_gpgSecretKeyPart1}${bamboo_gpgSecretKeyPart2}" \
+                  --build-arg "GPG_KEY_PASSPHRASE=${bamboo_gpgPassword}" \
+                  --build-arg "REVISION=${bamboo_repository_revision_number}" \
+                  --build-arg "SIGNER_API_KEY=${bamboo_adguardDnsClientWinSignerSecretApiKey}" \
+                  --build-arg "SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)" \
+                  --build-arg "VERSION=${bamboo_buildNumber}" \
+                  --build-arg "ARCH=amd64" \
+                  --build-arg "OS=darwin linux" \
+                  --output '.' \
+                  --progress 'plain' \
+                  --target 'builder-exporter' \
+                  -f ./docker/ci.Dockerfile \
+                  .
 
               # Build Windows separately to build MSI installers for all
               # supported architectures.
-              make\
-                  OS="windows"\
-                  CHANNEL=${bamboo.channel}\
-                  GPG_KEY_PASSPHRASE=${bamboo.gpgPassword}\
-                  DEPLOY_SCRIPT_PATH="../bamboo-deploy-publisher/deploy.sh"\
-                  SIGNER_API_KEY="${bamboo.adguardDnsClientWinSignerSecretApiKey}"\
-                  PARALLELISM=1\
-                  VERBOSE=2\
-                  build-release
+              docker build \
+                  --build-arg "BASE_IMAGE=${bamboo_dockerGo}" \
+                  --build-arg "BRANCH=${bamboo_planRepository_branchName}" \
+                  --build-arg "CACHE_BUSTER=${bamboo_cacheBuster}" \
+                  --build-arg "CHANNEL=${bamboo_channel}" \
+                  --build-arg "GPG_SECRET_KEY=${bamboo_gpgSecretKeyPart1}${bamboo_gpgSecretKeyPart2}" \
+                  --build-arg "GPG_KEY_PASSPHRASE=${bamboo_gpgPassword}" \
+                  --build-arg "REVISION=${bamboo_repository_revision_number}" \
+                  --build-arg "SIGNER_API_KEY=${bamboo_adguardDnsClientWinSignerSecretApiKey}" \
+                  --build-arg "SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)" \
+                  --build-arg "OS=windows" \
+                  --build-arg "VERSION=${bamboo_buildNumber}" \
+                  --output '.' \
+                  --progress 'plain' \
+                  --target 'builder-exporter' \
+                  -f ./docker/ci.Dockerfile \
+                  .
 
 'Publish':
     'artifact-subscriptions':
