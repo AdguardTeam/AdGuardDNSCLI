@@ -151,6 +151,7 @@
                   --build-arg "BRANCH=${bamboo_planRepository_branchName}" \
                   --build-arg "CACHE_BUSTER=${bamboo_cacheBuster}" \
                   --build-arg "CHANNEL=${bamboo_channel}" \
+                  --build-arg "DEPLOY_SCRIPT_PATH=../bamboo-deploy-publisher/deploy.sh" \
                   --build-arg "GPG_SECRET_KEY=${bamboo_gpgSecretKeyPart1}${bamboo_gpgSecretKeyPart2}" \
                   --build-arg "GPG_KEY_PASSPHRASE=${bamboo_gpgPassword}" \
                   --build-arg "REVISION=${bamboo_repository_revision_number}" \
@@ -215,6 +216,7 @@
                   --build-arg "BRANCH=${bamboo_planRepository_branchName}" \
                   --build-arg "CACHE_BUSTER=${bamboo_cacheBuster}" \
                   --build-arg "CHANNEL=${bamboo_channel}" \
+                  --build-arg "DEPLOY_SCRIPT_PATH=../bamboo-deploy-publisher/deploy.sh" \
                   --build-arg "GPG_SECRET_KEY=${bamboo_gpgSecretKeyPart1}${bamboo_gpgSecretKeyPart2}" \
                   --build-arg "GPG_KEY_PASSPHRASE=${bamboo_gpgPassword}" \
                   --build-arg "REVISION=${bamboo_repository_revision_number}" \
@@ -236,6 +238,7 @@
                   --build-arg "BRANCH=${bamboo_planRepository_branchName}" \
                   --build-arg "CACHE_BUSTER=${bamboo_cacheBuster}" \
                   --build-arg "CHANNEL=${bamboo_channel}" \
+                  --build-arg "DEPLOY_SCRIPT_PATH=../bamboo-deploy-publisher/deploy.sh" \
                   --build-arg "GPG_SECRET_KEY=${bamboo_gpgSecretKeyPart1}${bamboo_gpgSecretKeyPart2}" \
                   --build-arg "GPG_KEY_PASSPHRASE=${bamboo_gpgPassword}" \
                   --build-arg "REVISION=${bamboo_repository_revision_number}" \
