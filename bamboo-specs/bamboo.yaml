@@ -154,7 +154,7 @@
                   --build-arg "GPG_SECRET_KEY=${bamboo_gpgSecretKeyPart1}${bamboo_gpgSecretKeyPart2}" \
                   --build-arg "GPG_KEY_PASSPHRASE=${bamboo_gpgPassword}" \
                   --build-arg "REVISION=${bamboo_repository_revision_number}" \
-                  --build-arg "SIGNER_API_KEY=${bamboo.adguardDnsClientWinSignerSecretApiKey}" \
+                  --build-arg "SIGNER_API_KEY=${bamboo_adguardDnsClientWinSignerSecretApiKey}" \
                   --build-arg "SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)" \
                   --build-arg "VERSION=${bamboo_buildNumber}" \
                   --output '.' \
@@ -218,7 +218,7 @@
                   --build-arg "GPG_SECRET_KEY=${bamboo_gpgSecretKeyPart1}${bamboo_gpgSecretKeyPart2}" \
                   --build-arg "GPG_KEY_PASSPHRASE=${bamboo_gpgPassword}" \
                   --build-arg "REVISION=${bamboo_repository_revision_number}" \
-                  --build-arg "SIGNER_API_KEY=${bamboo.adguardDnsClientWinSignerSecretApiKey}" \
+                  --build-arg "SIGNER_API_KEY=${bamboo_adguardDnsClientWinSignerSecretApiKey}" \
                   --build-arg "SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)" \
                   --build-arg "VERSION=${bamboo_buildNumber}" \
                   --build-arg "ARCH=amd64" \
@@ -239,7 +239,7 @@
                   --build-arg "GPG_SECRET_KEY=${bamboo_gpgSecretKeyPart1}${bamboo_gpgSecretKeyPart2}" \
                   --build-arg "GPG_KEY_PASSPHRASE=${bamboo_gpgPassword}" \
                   --build-arg "REVISION=${bamboo_repository_revision_number}" \
-                  --build-arg "SIGNER_API_KEY=${bamboo.adguardDnsClientWinSignerSecretApiKey}" \
+                  --build-arg "SIGNER_API_KEY=${bamboo_adguardDnsClientWinSignerSecretApiKey}" \
                   --build-arg "SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)" \
                   --build-arg "OS=windows" \
                   --build-arg "VERSION=${bamboo_buildNumber}" \
