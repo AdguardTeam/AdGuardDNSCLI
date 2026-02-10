@@ -131,6 +131,7 @@
          'clean-working-dir': true
     'tasks':
       - 'checkout':
+            'path': '${bamboo.name}'
             'force-clean-build': true
       - 'script':
             'interpreter': 'SHELL'
@@ -193,6 +194,7 @@
          'clean-working-dir': true
     'tasks':
       - 'checkout':
+            'path': '${bamboo.name}'
             'force-clean-build': true
       - 'script':
             'interpreter': 'SHELL'
