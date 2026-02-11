@@ -131,6 +131,10 @@
          'clean-working-dir': true
     'tasks':
       - 'checkout':
+            'repository': 'bamboo-deploy-publisher'
+            'path': 'bamboo-deploy-publisher'
+            'force-clean-build': true
+      - 'checkout':
             'path': '${bamboo.name}'
             'force-clean-build': true
       - 'script':
@@ -144,6 +148,9 @@
               # Follow the working repository path.
               cd "${bamboo.name}"
 
+              # Copy the deploy script to the working repository.
+              cp ../bamboo-deploy-publisher/deploy.sh ./deploy.sh
+
               docker info
 
               docker build \
@@ -151,7 +158,7 @@
                   --build-arg "BRANCH=${bamboo_planRepository_branchName}" \
                   --build-arg "CACHE_BUSTER=${bamboo_cacheBuster}" \
                   --build-arg "CHANNEL=${bamboo_channel}" \
-                  --build-arg "DEPLOY_SCRIPT_PATH=../bamboo-deploy-publisher/deploy.sh" \
+                  --build-arg "DEPLOY_SCRIPT_PATH=./deploy.sh" \
                   --build-arg "GPG_SECRET_KEY=${bamboo_gpgSecretKeyPart1}${bamboo_gpgSecretKeyPart2}" \
                   --build-arg "GPG_KEY_PASSPHRASE=${bamboo_gpgPassword}" \
                   --build-arg "REVISION=${bamboo_repository_revision_number}" \
@@ -195,6 +202,10 @@
          'clean-working-dir': true
     'tasks':
       - 'checkout':
+            'repository': 'bamboo-deploy-publisher'
+            'path': 'bamboo-deploy-publisher'
+            'force-clean-build': true
+      - 'checkout':
             'path': '${bamboo.name}'
             'force-clean-build': true
       - 'script':
@@ -208,6 +219,9 @@
               # Follow the working repository path.
               cd "${bamboo.name}"
 
+              # Copy the deploy script to the working repository.
+              cp ../bamboo-deploy-publisher/deploy.sh ./deploy.sh
+
               docker info
 
               # Build darwin and linux with amd64 architecture
@@ -216,7 +230,7 @@
                   --build-arg "BRANCH=${bamboo_planRepository_branchName}" \
                   --build-arg "CACHE_BUSTER=${bamboo_cacheBuster}" \
                   --build-arg "CHANNEL=${bamboo_channel}" \
-                  --build-arg "DEPLOY_SCRIPT_PATH=../bamboo-deploy-publisher/deploy.sh" \
+                  --build-arg "DEPLOY_SCRIPT_PATH=./deploy.sh" \
                   --build-arg "GPG_SECRET_KEY=${bamboo_gpgSecretKeyPart1}${bamboo_gpgSecretKeyPart2}" \
                   --build-arg "GPG_KEY_PASSPHRASE=${bamboo_gpgPassword}" \
                   --build-arg "REVISION=${bamboo_repository_revision_number}" \
@@ -238,7 +252,7 @@
                   --build-arg "BRANCH=${bamboo_planRepository_branchName}" \
                   --build-arg "CACHE_BUSTER=${bamboo_cacheBuster}" \
                   --build-arg "CHANNEL=${bamboo_channel}" \
-                  --build-arg "DEPLOY_SCRIPT_PATH=../bamboo-deploy-publisher/deploy.sh" \
+                  --build-arg "DEPLOY_SCRIPT_PATH=./deploy.sh" \
                   --build-arg "GPG_SECRET_KEY=${bamboo_gpgSecretKeyPart1}${bamboo_gpgSecretKeyPart2}" \
                   --build-arg "GPG_KEY_PASSPHRASE=${bamboo_gpgPassword}" \
                   --build-arg "REVISION=${bamboo_repository_revision_number}" \
