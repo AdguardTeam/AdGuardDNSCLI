@@ -1,6 +1,6 @@
 module github.com/AdguardTeam/AdGuardDNSCLI
 
-go 1.25.5
+go 1.25.7
 
 require (
 	github.com/AdguardTeam/dnsproxy v0.78.2
@@ -74,7 +74,7 @@ require (
 	golang.org/x/tools v0.41.0 // indirect
 	golang.org/x/vuln v1.1.4 // indirect
 	gonum.org/v1/gonum v0.17.0 // indirect
-	google.golang.org/genai v1.44.0 // indirect
+	google.golang.org/genai v1.45.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260203192932-546029d2fa20 // indirect
 	google.golang.org/grpc v1.78.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect

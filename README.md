@@ -21,9 +21,6 @@ A cross-platform lightweight DNS client for [AdGuard DNS]. It operates as a DNS 
 
 ## <a href="#start" id="start" name="start">Quick start</a>
 
-> [!WARNING]
-> AdGuard DNS CLI is still in the Beta stage. It may be unstable.
-
 Supported operating systems:
 
 - Linux;

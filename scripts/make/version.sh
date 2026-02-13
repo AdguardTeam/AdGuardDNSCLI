@@ -60,10 +60,6 @@ case "$channel" in
 	# This pseudo-channel is used to set a proper versions into release
 	# candidate builds.
 
-	# last_tag is expected to be the latest release tag.
-	last_tag="$(git describe --abbrev=0)"
-	readonly last_tag
-
 	# current_branch is the name of the branch currently checked out.
 	current_branch="$(git rev-parse --abbrev-ref HEAD)"
 	readonly current_branch
@@ -78,7 +74,7 @@ case "$channel" in
 		exit 1
 	fi
 
-	version="${current_branch#rc-}-rc.$(git rev-list --count "$last_tag"..HEAD)"
+	version="${current_branch#rc-}-rc.$(git rev-list --count "master"..HEAD)"
 	;;
 *)
 	echo "invalid channel '$channel', supported values are \

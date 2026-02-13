@@ -11,7 +11,7 @@ import (
 )
 
 // serviceName is the name used by the service and the system logger.
-const serviceName = "AdGuard DNS CLI"
+const serviceName = "AdGuardDNSCLI"
 
 // newServiceConfig creates a configuration that the OS service manager uses to
 // control the service.
