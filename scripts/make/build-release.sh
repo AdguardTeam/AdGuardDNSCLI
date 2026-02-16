@@ -281,6 +281,8 @@ build() {
 		;;
 	esac
 
+	# TODO(e.burkov):  Consider removing "./${build_dir}".
+
 	log "$build_archive"
 }
 

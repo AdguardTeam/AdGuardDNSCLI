@@ -2,13 +2,16 @@
 # This comment is used to simplify checking local copies of the Makefile.  Bump
 # this number every time a significant change is made to this Makefile.
 #
-# AdGuard-Project-Version: 2
+# AdGuard-Project-Version: 8
 'version': 2
 'plan':
     'project-key': 'GO'
     'key': 'DNSCLIENT'
     'name': 'AdGuardDNSCLI'
 'variables':
+    # This variable is used to override Docker caching, for example to rerun a
+    # flaky test suite.
+    'cacheBuster': '0'
     # NOTE:  The Test stage depends on BusyBox syslogd on Alpine.
     'dockerGo': 'adguard/go-builder:1.25.7--1'
     'maintainer': 'Adguard Go Team'
@@ -16,16 +19,6 @@
     'channel': 'development'
 
 'stages':
-  - 'Go Lint':
-        'manual': false
-        'final': false
-        'jobs':
-          - 'Go Lint'
-  - 'Misc Lint':
-        'manual': false
-        'final': false
-        'jobs':
-          - 'Misc Lint'
   - 'Test':
         'manual': false
         'final': false
@@ -43,36 +36,15 @@
         'jobs':
           - 'Publish'
 
-'Go Lint':
-    'docker':
-        'image': '${bamboo.dockerGo}'
-        'volumes':
-            '${system.GO_CACHE_DIR}': '${bamboo.cacheGo}'
-            '${system.GO_PKG_CACHE_DIR}': '${bamboo.cacheGoPkg}'
-    'key': 'LINT'
-    'requirements':
-    - 'adg-docker': 'true'
-    'tasks':
-      - 'checkout':
-            'force-clean-build': true
-      - 'script':
-            'interpreter': 'SHELL'
-            'scripts':
-            - |
-              #!/bin/sh
-
-              set -e -f -u -x
-
-              make VERBOSE=1 GOMAXPROCS=1 go-tools go-lint
-
-'Misc Lint':
-    'docker':
-        'image': '${bamboo.dockerGo}'
-    'key': 'MISCLINT'
-    'other':
-        'clean-working-dir': true
-    'requirements':
-    - 'adg-docker': 'true'
+'Test':
+    'final-tasks':
+      - 'test-parser':
+          # The default pattern, '**/test-reports/*.xml', works, so don't set
+          # the test-results property.
+          'type': 'junit'
+          'ignore-time': true
+      - 'clean'
+    'key': 'TEST'
     'tasks':
       - 'checkout':
             'force-clean-build': true
@@ -84,65 +56,21 @@
 
                 set -e -f -u -x
 
-                make \
-                    VERBOSE=1 \
-                    go-tools \
-                    md-lint \
-                    sh-lint \
-                    txt-lint \
-                    ;
+                docker info
 
-'Test':
-    'docker':
-        'image': '${bamboo.dockerGo}'
-        'volumes':
-            '${system.GO_CACHE_DIR}': '${bamboo.cacheGo}'
-            '${system.GO_PKG_CACHE_DIR}': '${bamboo.cacheGoPkg}'
-    'final-tasks':
-      - 'test-parser':
-          # The default pattern, '**/test-reports/*.xml', works, so don't set
-          # the test-results property.
-          'type': 'junit'
-          'ignore-time': true
-      - 'clean'
-    'key': 'TEST'
-    'requirements':
-    - 'adg-docker': 'true'
-    'tasks':
-      - 'checkout':
-            'force-clean-build': true
-      - 'script':
-            'interpreter': 'SHELL'
-            'scripts':
-            - |
-              #!/bin/sh
+                docker build \
+                    --build-arg "BASE_IMAGE=${bamboo_dockerGo}" \
+                    --build-arg "CACHE_BUSTER=${bamboo_cacheBuster}" \
+                    --output '.' \
+                    --progress 'plain' \
+                    --target 'tester-exporter' \
+                    -f ./docker/ci.Dockerfile \
+                    .
 
-              set -e -f -u -x
+                exit_code="$(cat ./test-reports/test-exit-code.txt)"
+                readonly exit_code
 
-              export TEST_AGDCSLOG=1
-
-              # Run syslogd in the foreground (-n) so its PID can be captured,
-              # and enable the in-memory ring buffer (-C) so that logread can
-              # read messages during integration tests.
-              syslogd -n -C &
-
-              syslogd_pid="$!"
-              readonly syslogd_pid
-
-              make \
-                  TEST_REPORTS_DIR="./test-reports/" \
-                  VERBOSE=1 \
-                  go-tools \
-                  go-deps \
-                  go-test \
-                  ;
-
-              exit_code="$(cat ./test-reports/test-exit-code.txt)"
-              readonly exit_code
-
-              kill "$syslogd_pid"
-
-              exit "$exit_code"
+                exit "$exit_code"
 
 'Artifact':
     'artifacts':
@@ -198,20 +126,12 @@
         'pattern': '${bamboo.name}/dist/version.txt'
         'shared': true
         'required': true
-    'docker':
-        'image': '${bamboo.dockerGo}'
-        'volumes':
-            '${system.GO_CACHE_DIR}': '${bamboo.cacheGo}'
-            '${system.GO_PKG_CACHE_DIR}': '${bamboo.cacheGoPkg}'
     'key': 'ART'
     'other':
          'clean-working-dir': true
-    'requirements':
-      - 'adg-docker': 'true'
     'tasks':
       - 'checkout':
             'repository': 'bamboo-deploy-publisher'
-            # The paths are always relative to the working directory.
             'path': 'bamboo-deploy-publisher'
             'force-clean-build': true
       - 'checkout':
@@ -228,19 +148,28 @@
               # Follow the working repository path.
               cd "${bamboo.name}"
 
-              # TODO(e.burkov):  Consider using more POSIX-compliant printf.
-              echo "${bamboo.gpgSecretKeyPart1}${bamboo.gpgSecretKeyPart2}"\
-                  | awk '{ gsub(/\\n/, "\n"); print; }'\
-                  | gpg --import --batch --yes
+              # Copy the deploy script to the working repository.
+              cp ../bamboo-deploy-publisher/deploy.sh ./deploy.sh
 
-              make\
-                  CHANNEL=${bamboo.channel}\
-                  GPG_KEY_PASSPHRASE=${bamboo.gpgPassword}\
-                  DEPLOY_SCRIPT_PATH="../bamboo-deploy-publisher/deploy.sh"\
-                  SIGNER_API_KEY="${bamboo.adguardDnsClientWinSignerSecretApiKey}"\
-                  PARALLELISM=1\
-                  VERBOSE=2\
-                  build-release
+              docker info
+
+              docker build \
+                  --build-arg "BASE_IMAGE=${bamboo_dockerGo}" \
+                  --build-arg "BRANCH=${bamboo_planRepository_branchName}" \
+                  --build-arg "CACHE_BUSTER=${bamboo_cacheBuster}" \
+                  --build-arg "CHANNEL=${bamboo_channel}" \
+                  --build-arg "DEPLOY_SCRIPT_PATH=./deploy.sh" \
+                  --build-arg "GPG_SECRET_KEY=${bamboo_gpgSecretKeyPart1}${bamboo_gpgSecretKeyPart2}" \
+                  --build-arg "GPG_KEY_PASSPHRASE=${bamboo_gpgPassword}" \
+                  --build-arg "REVISION=${bamboo_repository_revision_number}" \
+                  --build-arg "SIGNER_API_KEY=${bamboo_adguardDnsClientWinSignerSecretApiKey}" \
+                  --build-arg "SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)" \
+                  --build-arg "VERSION=${bamboo_buildNumber}" \
+                  --output '.' \
+                  --progress 'plain' \
+                  --target 'builder-exporter' \
+                  -f ./docker/ci.Dockerfile \
+                  .
 
 'ArtifactQA':
     'artifacts':
@@ -268,20 +197,12 @@
         'pattern': '${bamboo.name}/dist/checksums.txt'
         'shared': true
         'required': true
-    'docker':
-        'image': '${bamboo.dockerGo}'
-        'volumes':
-            '${system.GO_CACHE_DIR}': '${bamboo.cacheGo}'
-            '${system.GO_PKG_CACHE_DIR}': '${bamboo.cacheGoPkg}'
     'key': 'ARTQA'
     'other':
          'clean-working-dir': true
-    'requirements':
-    - 'adg-docker': 'true'
     'tasks':
       - 'checkout':
             'repository': 'bamboo-deploy-publisher'
-            # The paths are always relative to the working directory.
             'path': 'bamboo-deploy-publisher'
             'force-clean-build': true
       - 'checkout':
@@ -298,33 +219,52 @@
               # Follow the working repository path.
               cd "${bamboo.name}"
 
-              # TODO(e.burkov):  Consider using more POSIX-compliant printf.
-              echo "${bamboo.gpgSecretKeyPart1}${bamboo.gpgSecretKeyPart2}"\
-                  | awk '{ gsub(/\\n/, "\n"); print; }'\
-                  | gpg --import --batch --yes
+              # Copy the deploy script to the working repository.
+              cp ../bamboo-deploy-publisher/deploy.sh ./deploy.sh
 
-              make\
-                  ARCH="amd64"\
-                  OS="darwin linux"\
-                  CHANNEL=${bamboo.channel}\
-                  GPG_KEY_PASSPHRASE=${bamboo.gpgPassword}\
-                  DEPLOY_SCRIPT_PATH="../bamboo-deploy-publisher/deploy.sh"\
-                  SIGNER_API_KEY="${bamboo.adguardDnsClientWinSignerSecretApiKey}"\
-                  PARALLELISM=1\
-                  VERBOSE=2\
-                  build-release
+              docker info
+
+              # Build darwin and linux with amd64 architecture
+              docker build \
+                  --build-arg "BASE_IMAGE=${bamboo_dockerGo}" \
+                  --build-arg "BRANCH=${bamboo_planRepository_branchName}" \
+                  --build-arg "CACHE_BUSTER=${bamboo_cacheBuster}" \
+                  --build-arg "CHANNEL=${bamboo_channel}" \
+                  --build-arg "DEPLOY_SCRIPT_PATH=./deploy.sh" \
+                  --build-arg "GPG_SECRET_KEY=${bamboo_gpgSecretKeyPart1}${bamboo_gpgSecretKeyPart2}" \
+                  --build-arg "GPG_KEY_PASSPHRASE=${bamboo_gpgPassword}" \
+                  --build-arg "REVISION=${bamboo_repository_revision_number}" \
+                  --build-arg "SIGNER_API_KEY=${bamboo_adguardDnsClientWinSignerSecretApiKey}" \
+                  --build-arg "SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)" \
+                  --build-arg "VERSION=${bamboo_buildNumber}" \
+                  --build-arg "ARCH=amd64" \
+                  --build-arg "OS=darwin linux" \
+                  --output '.' \
+                  --progress 'plain' \
+                  --target 'builder-exporter' \
+                  -f ./docker/ci.Dockerfile \
+                  .
 
               # Build Windows separately to build MSI installers for all
               # supported architectures.
-              make\
-                  OS="windows"\
-                  CHANNEL=${bamboo.channel}\
-                  GPG_KEY_PASSPHRASE=${bamboo.gpgPassword}\
-                  DEPLOY_SCRIPT_PATH="../bamboo-deploy-publisher/deploy.sh"\
-                  SIGNER_API_KEY="${bamboo.adguardDnsClientWinSignerSecretApiKey}"\
-                  PARALLELISM=1\
-                  VERBOSE=2\
-                  build-release
+              docker build \
+                  --build-arg "BASE_IMAGE=${bamboo_dockerGo}" \
+                  --build-arg "BRANCH=${bamboo_planRepository_branchName}" \
+                  --build-arg "CACHE_BUSTER=${bamboo_cacheBuster}" \
+                  --build-arg "CHANNEL=${bamboo_channel}" \
+                  --build-arg "DEPLOY_SCRIPT_PATH=./deploy.sh" \
+                  --build-arg "GPG_SECRET_KEY=${bamboo_gpgSecretKeyPart1}${bamboo_gpgSecretKeyPart2}" \
+                  --build-arg "GPG_KEY_PASSPHRASE=${bamboo_gpgPassword}" \
+                  --build-arg "REVISION=${bamboo_repository_revision_number}" \
+                  --build-arg "SIGNER_API_KEY=${bamboo_adguardDnsClientWinSignerSecretApiKey}" \
+                  --build-arg "SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)" \
+                  --build-arg "OS=windows" \
+                  --build-arg "VERSION=${bamboo_buildNumber}" \
+                  --output '.' \
+                  --progress 'plain' \
+                  --target 'builder-exporter' \
+                  -f ./docker/ci.Dockerfile \
+                  .
 
 'Publish':
     'artifact-subscriptions':
@@ -346,8 +286,6 @@
     'key': 'PGH'
     'other':
         'clean-working-dir': true
-    'requirements':
-    - 'adg-docker': 'true'
     'tasks':
     - 'clean'
     - 'checkout':
@@ -389,16 +327,6 @@
             'dockerGo': 'adguard/go-builder:1.25.7--1'
             'channel': 'candidate'
         'stages':
-        - 'Go Lint':
-            'manual': false
-            'final': false
-            'jobs':
-            - 'Go Lint'
-        - 'Misc Lint':
-            'manual': false
-            'final': false
-            'jobs':
-            - 'Misc Lint'
         - 'Test':
             'manual': false
             'final': false
@@ -420,16 +348,6 @@
             'dockerGo': 'adguard/go-builder:1.25.7--1'
             'channel': 'release'
         'stages':
-        - 'Go Lint':
-            'manual': false
-            'final': false
-            'jobs':
-            - 'Go Lint'
-        - 'Misc Lint':
-            'manual': false
-            'final': false
-            'jobs':
-            - 'Misc Lint'
         - 'Test':
             'manual': false
             'final': false
@@ -448,16 +366,6 @@
 # All the other branches, including master.
   - '^.*':
         'stages':
-        - 'Go Lint':
-            'manual': false
-            'final': false
-            'jobs':
-            - 'Go Lint'
-        - 'Misc Lint':
-            'manual': false
-            'final': false
-            'jobs':
-            - 'Misc Lint'
         - 'Test':
             'manual': false
             'final': false
