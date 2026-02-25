@@ -177,20 +177,16 @@
         'pattern': '${bamboo.name}/dist/AdGuardDNSCLI_darwin_amd64.zip'
         'shared': true
         'required': true
+      - 'name': 'AdGuardDNSCLI_darwin_arm64'
+        'pattern': '${bamboo.name}/dist/AdGuardDNSCLI_darwin_arm64.zip'
+        'shared': true
+        'required': true
       - 'name': 'AdGuardDNSCLI_linux_amd64'
         'pattern': '${bamboo.name}/dist/AdGuardDNSCLI_linux_amd64.tar.gz'
         'shared': true
         'required': true
-      - 'name': 'AdGuardDNSCLI_windows_386_msi'
-        'pattern': '${bamboo.name}/dist/AdGuardDNSCLI_windows_386.msi'
-        'shared': true
-        'required': true
       - 'name': 'AdGuardDNSCLI_windows_amd64_msi'
         'pattern': '${bamboo.name}/dist/AdGuardDNSCLI_windows_amd64.msi'
-        'shared': true
-        'required': true
-      - 'name': 'AdGuardDNSCLI_windows_arm64_msi'
-        'pattern': '${bamboo.name}/dist/AdGuardDNSCLI_windows_arm64.msi'
         'shared': true
         'required': true
       - 'name': 'Checksums'
@@ -224,7 +220,6 @@
 
               docker info
 
-              # Build darwin and linux with amd64 architecture
               docker build \
                   --build-arg "BASE_IMAGE=${bamboo_dockerGo}" \
                   --build-arg "BRANCH=${bamboo_planRepository_branchName}" \
@@ -237,32 +232,9 @@
                   --build-arg "SIGNER_API_KEY=${bamboo_adguardDnsClientWinSignerSecretApiKey}" \
                   --build-arg "SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)" \
                   --build-arg "VERSION=${bamboo_buildNumber}" \
-                  --build-arg "ARCH=amd64" \
-                  --build-arg "OS=darwin linux" \
                   --output '.' \
                   --progress 'plain' \
-                  --target 'builder-exporter' \
-                  -f ./docker/ci.Dockerfile \
-                  .
-
-              # Build Windows separately to build MSI installers for all
-              # supported architectures.
-              docker build \
-                  --build-arg "BASE_IMAGE=${bamboo_dockerGo}" \
-                  --build-arg "BRANCH=${bamboo_planRepository_branchName}" \
-                  --build-arg "CACHE_BUSTER=${bamboo_cacheBuster}" \
-                  --build-arg "CHANNEL=${bamboo_channel}" \
-                  --build-arg "DEPLOY_SCRIPT_PATH=./deploy.sh" \
-                  --build-arg "GPG_SECRET_KEY=${bamboo_gpgSecretKeyPart1}${bamboo_gpgSecretKeyPart2}" \
-                  --build-arg "GPG_KEY_PASSPHRASE=${bamboo_gpgPassword}" \
-                  --build-arg "REVISION=${bamboo_repository_revision_number}" \
-                  --build-arg "SIGNER_API_KEY=${bamboo_adguardDnsClientWinSignerSecretApiKey}" \
-                  --build-arg "SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)" \
-                  --build-arg "OS=windows" \
-                  --build-arg "VERSION=${bamboo_buildNumber}" \
-                  --output '.' \
-                  --progress 'plain' \
-                  --target 'builder-exporter' \
+                  --target 'qa-builder-exporter' \
                   -f ./docker/ci.Dockerfile \
                   .
 
