@@ -89,6 +89,8 @@ require (
 ignore (
 	./bin
 	./dist
+	./pkg
+	./src
 	./test-reports
 )
 
