@@ -26,7 +26,6 @@ type program struct {
 
 	// TODO(e.burkov):  Use [io.Closer].
 	logFile *os.File
-	done    chan struct{}
 	errCh   chan error
 }
 
@@ -54,7 +53,8 @@ func (prog *program) Start(_ osservice.Service) (err error) {
 		"verbose", l.Enabled(ctx, slog.LevelDebug),
 	)
 
-	svcHdlr := newServiceHandler(prog.done, service.SignalHandlerShutdownTimeout)
+	svcHdlrLog := prog.logger.With(slogutil.KeyPrefix, "service_handler")
+	svcHdlr := newServiceHandler(svcHdlrLog, service.SignalHandlerShutdownTimeout)
 
 	dnsSvc, err := dnssvc.New(prog.conf.DNS.toInternal(prog.logger))
 	if err != nil {
@@ -69,8 +69,6 @@ func (prog *program) Start(_ osservice.Service) (err error) {
 	svcHdlr.add(dnsSvc)
 	l.DebugContext(ctx, "dns service started")
 
-	svcHdlrLog := prog.logger.With(slogutil.KeyPrefix, "service_handler")
-
 	go svcHdlr.handle(ctx, svcHdlrLog, prog.errCh)
 
 	return nil
@@ -78,8 +76,6 @@ func (prog *program) Start(_ osservice.Service) (err error) {
 
 // Stop implements the [osservice.Interface] interface for [*program].
 func (prog *program) Stop(_ osservice.Service) (err error) {
-	close(prog.done)
-
 	return <-prog.errCh
 }
 
