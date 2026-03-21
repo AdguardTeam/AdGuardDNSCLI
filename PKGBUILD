@@ -6,6 +6,7 @@ pkgver=0.0.1
 pkgrel=1
 pkgdesc='A cross-platform lightweight DNS client for AdGuard DNS'
 arch=('x86_64' 'aarch64')
+backup=('opt/adguard-dns-cli/config.yaml')
 url='https://adguard-dns.io'
 license=('Apache-2.0')
 depends=()
@@ -78,6 +79,8 @@ package() {
     install -Dm755 "adguarddns-cli" "$pkgdir/opt/$pkgname/adguarddns-cli"
 
     # Install the configuration file to /opt alongside the binary
+    # The backup array above ensures pacman creates .pacnew on upgrades
+    # when the user has modified their config
     install -Dm644 "config.dist.yaml" "$pkgdir/opt/$pkgname/config.yaml"
 
     # Create a symlink in /usr/bin for easy access
