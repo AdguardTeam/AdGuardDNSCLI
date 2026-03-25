@@ -2,21 +2,36 @@
 
 pkgname=adguard-dns-cli
 _pkgname=AdGuardDNSCLI
-pkgver=0.0.1
+_basever=0.0.1
+pkgver=0.0.1+master
 pkgrel=1
 pkgdesc='A cross-platform lightweight DNS client for AdGuard DNS'
 arch=('x86_64' 'aarch64')
 backup=('opt/adguard-dns-cli/config.yaml')
-url='https://adguard-dns.io'
+url='https://github.com/nicholas-fedor/AdGuardDNSCLI'
 license=('Apache-2.0')
 depends=()
 makedepends=('go>=1.26.1' 'git')
 checkdepends=()
-source=("$pkgname-$pkgver.tar.gz::https://github.com/nicholas-fedor/$_pkgname/archive/v$pkgver.tar.gz")
+source=("${pkgname}-${pkgver}.tar.gz::https://github.com/nicholas-fedor/${_pkgname}/archive/refs/heads/master.tar.gz")
 sha256sums=('SKIP')
 
+# Locate the extracted source directory (named AdGuardDNSCLI-<branch>).
+_srcdir() {
+    find "${srcdir}" -maxdepth 1 -mindepth 1 -type d -name "${_pkgname}-*" -print -quit
+}
+
+pkgver() {
+    # Branch tarballs from GitHub use the branch name as the directory suffix
+    # (e.g., AdGuardDNSCLI-master). Append it to the base version.
+    local _dir="$(_srcdir)"
+    local _branch="${_dir##*-}"
+
+    printf '%s+%s' "${_basever}" "${_branch}"
+}
+
 prepare() {
-    cd "$_pkgname-$pkgver"
+    cd "$(_srcdir)"
 
     # Create directory for Go module cache
     mkdir -p "$srcdir/go"
@@ -29,7 +44,11 @@ prepare() {
 }
 
 build() {
-    cd "$_pkgname-$pkgver"
+    cd "$(_srcdir)"
+
+    local _branch
+    _branch="$(basename "$(_srcdir)")"
+    _branch="${_branch##*-}"
 
     # Set Go environment
     export GOPATH="$srcdir/go"
@@ -37,21 +56,15 @@ build() {
     export CGO_ENABLED=0
     export GOPROXY=https://proxy.golang.org,direct
 
-    # Get version information
-    local branch="release"
-    local revision="${pkgver}"
-    local version="v${pkgver}"
-    local committime="$(date +%s)"
-
     # Version package path
     local version_pkg='github.com/nicholas-fedor/AdGuardDNSCLI/internal/version'
 
     # Build ldflags
     local ldflags="-s -w"
-    ldflags="${ldflags} -X ${version_pkg}.branch=${branch}"
-    ldflags="${ldflags} -X ${version_pkg}.committime=${committime}"
-    ldflags="${ldflags} -X ${version_pkg}.revision=${revision}"
-    ldflags="${ldflags} -X ${version_pkg}.version=${version}"
+    ldflags="${ldflags} -X ${version_pkg}.branch=${_branch}"
+    ldflags="${ldflags} -X ${version_pkg}.committime=$(date +%s)"
+    ldflags="${ldflags} -X ${version_pkg}.revision=v${_basever}+${_branch}"
+    ldflags="${ldflags} -X ${version_pkg}.version=v${_basever}+${_branch}"
 
     # Build the binary
     go build \
@@ -62,7 +75,7 @@ build() {
 }
 
 check() {
-    cd "$_pkgname-$pkgver"
+    cd "$(_srcdir)"
 
     export GOPATH="$srcdir/go"
     export GO111MODULE=on
@@ -73,7 +86,7 @@ check() {
 }
 
 package() {
-    cd "$_pkgname-$pkgver"
+    cd "$(_srcdir)"
 
     # Install the binary to /opt (the app looks for config.yaml in the same directory)
     install -Dm755 "adguarddns-cli" "$pkgdir/opt/$pkgname/adguarddns-cli"
