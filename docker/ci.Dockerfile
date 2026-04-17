@@ -28,7 +28,7 @@
 #    needed.  Keep it in sync with bamboo-specs/bamboo.yaml.
 
 # NOTE:  Keep in sync with bamboo-specs/bamboo.yaml.
-ARG BASE_IMAGE=adguard/go-builder:1.25.5--1
+ARG BASE_IMAGE=adguard/go-builder:1.26.2--1
 
 # The dependencies stage is needed to install packages and tool dependencies.
 # This is also where binaries like osslsigncode, which may be required for tests
@@ -47,6 +47,11 @@ RUN \
 	--mount=type=cache,id=gopath,target=/go \
 <<-'EOF'
 set -e -f -u -x
+apt-get update -y
+apt-get dist-upgrade --no-install-recommends -y
+apt-get install --no-install-recommends -y busybox-static
+busybox --install -s
+apt-get dist-clean
 make \
 	BRANCH='master' \
 	REVISION='0000000000000000000000000000000000000000' \

@@ -11,6 +11,7 @@ import (
 	"github.com/AdguardTeam/golibs/errors"
 	"github.com/AdguardTeam/golibs/logutil/slogutil"
 	"github.com/AdguardTeam/golibs/osutil"
+	"github.com/AdguardTeam/golibs/osutil/executil"
 	osservice "github.com/kardianos/service"
 )
 
@@ -50,6 +51,9 @@ func Main() {
 	}
 
 	check(ctx, prog, err)
+
+	cmdCons := executil.SystemCommandConstructor{}
+	chooseSystem(ctx, l, cmdCons)
 
 	svc, err := osservice.New(prog, newServiceConfig())
 	check(ctx, prog, err)

@@ -67,6 +67,8 @@ func (a serviceAction) String() (s string) { return string(a) }
 // from [service.Control], but reports better errors and prints them to stderr.
 //
 // TODO(e.burkov):  Get output from this in MSI installer and show it.
+//
+// TODO(f.setrakov): Consider moving to another package.
 func control(svc osservice.Service, action serviceAction) (exitCode osutil.ExitCode) {
 	var err error
 	switch action {
@@ -95,6 +97,10 @@ func control(svc osservice.Service, action serviceAction) (exitCode osutil.ExitC
 	return osutil.ExitCodeSuccess
 }
 
+// statusRestartOnFail is a custom status value used to indicate the service's
+// state of restarting after failed start.
+const statusRestartOnFail = osservice.StatusStopped + 1
+
 // controlStatus prints the status of the system service corresponding to svc.
 func controlStatus(svc osservice.Service) (err error) {
 	status, err := svc.Status()
@@ -110,6 +116,8 @@ func controlStatus(svc osservice.Service) (err error) {
 		msg = "running"
 	case osservice.StatusStopped:
 		msg = "stopped"
+	case statusRestartOnFail:
+		msg = "restart on fail"
 	default:
 		msg = "error"
 

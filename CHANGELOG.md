@@ -15,6 +15,17 @@ See also the [v0.1.2 GitHub milestone][ms-v0.1.2].
 
 NOTE: Add new changes BELOW THIS COMMENT.
 -->
+
+### Security
+
+- Go version has been updated to prevent the possibility of exploiting the Go vulnerabilities fixed in [1.26.2][go-1.26.2].
+
+[go-1.26.2]: https://groups.google.com/g/golang-announce/c/0uYbvbPZRWU
+
+### Fixed
+
+- Status reported by the launchd service implementation in cases of scheduled service restart.
+
 <!--
 NOTE: Add new changes ABOVE THIS COMMENT.
 -->

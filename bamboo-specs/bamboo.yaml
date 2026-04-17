@@ -13,7 +13,7 @@
     # flaky test suite.
     'cacheBuster': '0'
     # NOTE:  The Test stage depends on BusyBox syslogd on Alpine.
-    'dockerGo': 'adguard/go-builder:1.25.7--1'
+    'dockerGo': 'adguard/go-builder:1.26.2--1'
     'maintainer': 'Adguard Go Team'
     'name': 'adguarddns-cli'
     'channel': 'development'
@@ -302,7 +302,7 @@
 # "candidate" pseudo-channel is used to generate version.
   - '^rc-v[0-9]+\.[0-9]+\.[0-9]+':
         'variables':
-            'dockerGo': 'adguard/go-builder:1.25.7--1'
+            'dockerGo': 'adguard/go-builder:1.26.2--1'
             'channel': 'candidate'
         'stages':
         - 'Test':
@@ -323,7 +323,7 @@
         # Set the default release channel on the final branch to release, as
         # these are the ones that actually get released.
         'variables':
-            'dockerGo': 'adguard/go-builder:1.25.7--1'
+            'dockerGo': 'adguard/go-builder:1.26.2--1'
             'channel': 'release'
         'stages':
         - 'Test':
