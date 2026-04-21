@@ -1,18 +1,23 @@
 'name': 'build'
-
+# Permissions are disabled for all the jobs by default, and then overridden for
+# specific jobs if needed.  This is a recommended practice for security reasons,
+# and also allows to avoid mistakes with permissions when creating new jobs.
+#
+# See https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#permissions.
+'permissions': {}
 'env':
   'GO_VERSION': '1.26.2'
-
 'on':
   'push':
     'branches':
-    - '*'
+      - '*'
     'tags':
-    - 'v*'
+      - 'v*'
   'pull_request':
-
 'jobs':
   'test':
+    'permissions':
+      'contents': 'read'
     'runs-on': '${{ matrix.os }}'
     'env':
       'GO111MODULE': 'on'
@@ -21,61 +26,68 @@
       'fail-fast': false
       'matrix':
         'os':
-        - 'ubuntu-latest'
-        - 'macOS-latest'
-        - 'windows-latest'
+          - 'ubuntu-latest'
+          - 'macOS-latest'
+          - 'windows-latest'
     'steps':
-    - 'name': 'Checkout'
-      'uses': 'actions/checkout@v2'
-      'with':
-        'fetch-depth': 0
-    - 'name': 'Set up Go'
-      'uses': 'actions/setup-go@v3'
-      'with':
-        'go-version': '${{ env.GO_VERSION }}'
-    - 'name': 'Set up Go modules cache'
-      'uses': 'actions/cache@v4'
-      'with':
-        'path': '~/go/pkg/mod'
-        'key': "${{ runner.os }}-go-${{ hashFiles('go.sum') }}"
-        'restore-keys': '${{ runner.os }}-go-'
-    - 'name': 'Run tests'
-      'shell': 'bash'
-      'run': 'make VERBOSE=1 go-deps go-test'
-
+      - 'name': 'Checkout'
+        'uses': 'actions/checkout@v6'
+        'with':
+          # Set to false to avoid  GITHUB_TOKEN leaking.
+          #
+          # See https://github.com/actions/checkout/issues/485#issuecomment-934422611.
+          'persist-credentials': false
+      - 'name': 'Set up Go'
+        'uses': 'actions/setup-go@v3'
+        'with':
+          'go-version': '${{ env.GO_VERSION }}'
+      - 'name': 'Set up Go modules cache'
+        'uses': 'actions/cache@v4'
+        'with':
+          'path': '~/go/pkg/mod'
+          'key': "${{ runner.os }}-go-${{ hashFiles('go.sum') }}"
+          'restore-keys': '${{ runner.os }}-go-'
+      - 'name': 'Run tests'
+        'shell': 'bash'
+        'run': 'make VERBOSE=1 go-deps go-test'
   'build-release':
+    'permissions':
+      'contents': 'read'
     'runs-on': 'ubuntu-latest'
-    'needs': 'test'
+    'needs':
+      - 'test'
     'steps':
-    - 'name': 'Checkout'
-      'uses': 'actions/checkout@v2'
-      'with':
-        'fetch-depth': 0
-    - 'name': 'Set up Go'
-      'uses': 'actions/setup-go@v3'
-      'with':
-        'go-version': '${{ env.GO_VERSION }}'
-    - 'name': 'Set up Go modules cache'
-      'uses': 'actions/cache@v4'
-      'with':
-        'path': '~/go/pkg/mod'
-        'key': "${{ runner.os }}-go-${{ hashFiles('go.sum') }}"
-        'restore-keys': '${{ runner.os }}-go-'
-    - 'name': 'Run snapshot build'
-      # Set a custom version string, since the checkout@v2 action does not seem
-      # to know about the master branch, while the version script uses it to
-      # count the number of commits within the branch.
-      'run': 'make MSI=0 SIGN=0 VERBOSE=1 VERSION="v0.0.0-github" build-release'
-
+      - 'name': 'Checkout'
+        'uses': 'actions/checkout@v6'
+        'with':
+          # Set to false to avoid  GITHUB_TOKEN leaking.
+          #
+          # See https://github.com/actions/checkout/issues/485#issuecomment-934422611.
+          'persist-credentials': false
+      - 'name': 'Set up Go'
+        'uses': 'actions/setup-go@v3'
+        'with':
+          'go-version': '${{ env.GO_VERSION }}'
+      - 'name': 'Set up Go modules cache'
+        'uses': 'actions/cache@v4'
+        'with':
+          'path': '~/go/pkg/mod'
+          'key': "${{ runner.os }}-go-${{ hashFiles('go.sum') }}"
+          'restore-keys': '${{ runner.os }}-go-'
+      - 'name': 'Run snapshot build'
+        # Set a custom version string, since the checkout@v2 action does not seem
+        # to know about the master branch, while the version script uses it to
+        # count the number of commits within the branch.
+        'run': 'make MSI=0 SIGN=0 VERBOSE=1 VERSION="v0.0.0-github" build-release'
   'notify':
     'needs':
-    - 'build-release'
+      - 'build-release'
     # Secrets are not passed to workflows that are triggered by a pull request
     # from a fork.
     #
     # Use always() to signal to the runner that this job must run even if the
     # previous ones failed.
-    'if':
+    'if': |
       ${{
         always() &&
         github.repository_owner == 'AdguardTeam' &&
@@ -84,15 +96,19 @@
           github.event.pull_request.head.repo.full_name == github.repository
         )
       }}
+    'permissions':
+      # Required by workflow-conclusion-action to check workflow status.
+      'actions': 'read'
+      'contents': 'read'
     'runs-on': 'ubuntu-latest'
     'steps':
-    - 'name': 'Conclusion'
-      'uses': 'technote-space/workflow-conclusion-action@v1'
-    - 'name': 'Send Slack notif'
-      'uses': '8398a7/action-slack@v3'
-      'with':
-        'status': '${{ env.WORKFLOW_CONCLUSION }}'
-        'fields': 'repo, message, commit, author, workflow'
-      'env':
-        'GITHUB_TOKEN': '${{ secrets.GITHUB_TOKEN }}'
-        'SLACK_WEBHOOK_URL': '${{ secrets.SLACK_WEBHOOK_URL }}'
+      - 'name': 'Conclusion'
+        'uses': 'technote-space/workflow-conclusion-action@v1'
+      - 'name': 'Send Slack notif'
+        'uses': '8398a7/action-slack@v3'
+        'with':
+          'status': '${{ env.WORKFLOW_CONCLUSION }}'
+          'fields': 'repo, message, commit, author, workflow'
+        'env':
+          'GITHUB_TOKEN': '${{ secrets.GITHUB_TOKEN }}'
+          'SLACK_WEBHOOK_URL': '${{ secrets.SLACK_WEBHOOK_URL }}'
