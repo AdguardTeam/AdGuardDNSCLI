@@ -18,9 +18,9 @@ NOTE: Add new changes BELOW THIS COMMENT.
 
 ### Security
 
-- Go version has been updated to prevent the possibility of exploiting the Go vulnerabilities fixed in [1.26.2][go-1.26.2].
+- Go version has been updated to prevent the possibility of exploiting the Go vulnerabilities fixed in [1.26.3][go-1.26.3].
 
-[go-1.26.2]: https://groups.google.com/g/golang-announce/c/0uYbvbPZRWU
+[go-1.26.3]: https://groups.google.com/g/golang-announce/c/qcCIEXso47M
 
 ### Fixed
 

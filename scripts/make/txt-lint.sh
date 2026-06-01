@@ -3,7 +3,7 @@
 # This comment is used to simplify checking local copies of the script.  Bump
 # this number every time a significant change is made to this script.
 #
-# AdGuard-Project-Version: 12
+# AdGuard-Project-Version: 14
 
 # TODO(e.burkov):  Add xmllint.  See msi/product.wxs.
 
@@ -14,15 +14,8 @@ if [ "$verbose" -gt '0' ]; then
 	set -x
 fi
 
-# Set $EXIT_ON_ERROR to zero to see all errors.
-if [ "${EXIT_ON_ERROR:-1}" -eq '0' ]; then
-	set +e
-else
-	set -e
-fi
-
-# We don't need glob expansions and we want to see errors about unset variables.
-set -f -u
+# Don't use -f, because we use globs in this script.
+set -e -o 'pipefail' -u
 
 # Source the common helpers, including not_found.
 . ./scripts/make/helper.sh
@@ -73,7 +66,7 @@ trailing_whitespace() {
 		')' \
 		-print \
 		| while read -r f; do
-			grep -e '[[:space:]]$' -n -- "$f" \
+			{ grep -e '[[:space:]]$' -n -- "$f" || :; } \
 				| sed -e "s:^:${f}\::" -e 's/ \+$/>>>&<<</'
 		done
 }
@@ -110,6 +103,11 @@ run_linter -e valid_json
 go="${GO:-go}"
 readonly go
 
+"$go" tool yamlfmt \
+	--lint \
+	./*.yaml \
+	;
+
 find_with_ignore \
 	-type 'f' \
 	'(' \
@@ -120,4 +118,5 @@ find_with_ignore \
 	-o -name '*.yaml' \
 	-o -name '*.yml' \
 	')' \
-	-exec "$go" 'tool' 'misspell' '--error' '{}' '+'
+	-exec "$go" 'tool' 'misspell' '--error' '{}' '+' \
+	;

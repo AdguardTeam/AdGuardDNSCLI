@@ -1,111 +1,111 @@
 # DNS server settings.
 dns:
-    # DNS results caching settings.
-    cache:
-        # If true, DNS responses will be cached.
-        enabled: true
-        # Size of common DNS cache.
-        size: 128MB
-        # Size of per-client DNS cache.
-        client_size: 4MB
-    # Serving settings.
-    server:
-        # Configuration for retrying binding listen addresses.  This is useful
-        # when the server starts before the network is ready, e.g. when
-        # installed as Windows service.
-        bind_retry:
-            # If true, the server will retry to bind listen addresses specified
-            # number of times.
-            enabled: true
-            # Time to wait between attempts.
-            interval: 1s
-            # Number of attempts after the first failure.
-            count: 4
-        # Addresses for server to listen to.
-        listen_addresses:
-          - address: '127.0.0.1:53'
-          - address: '192.168.1.1:53'
-        # Configuration for handling duplicate simultaneous requests used to
-        # mitigate cache poisoning attacks.
-        pending_requests:
-            # If true, the server will only perform a single request for each
-            # unique question.  Default is true.
-            enabled: true
-    # DNS bootstrap settings.
-    bootstrap:
-        # List of bootstrap DNS servers to resolve DNS names of upstream
-        # servers.
-        servers:
-          - address: '8.8.8.8:53'
-          - address: '8.8.4.4:53'
-        # Timeout for all outgoing bootstrap requests and incoming responses.
-        timeout: 2s
-    # DNS upstream settings.
-    upstream:
-        # Set of upstream server groups, defined by matching rules.
-        groups:
-            'default':
-                address: 'https://unfiltered.adguard-dns.com/dns-query'
-            'private':
-                address: '192.168.12.34'
-            'office':
-                address: '192.168.12.34'
-                # Matches "www.mycompany.local", "www.jira.mycompany.local",
-                # etc.
-                match:
-                  - question_domain: 'mycompany.local'
-            'abcd1234_doh':
-                address: 'https://d.adguard-dns.com/dns-query/abcd1234'
-                # Matches 192.168.1.1 OR 192.168.1.3.
-                match:
-                  - client: '192.168.1.1'
-                  - client: '192.168.1.3'
-            'abcd1234_dot':
-                address: 'tls://abcd1234.d.adguard-dns.com'
-                # Matches 192.168.1.2 OR 192.168.1.4.
-                match:
-                  - client: '192.168.1.2'
-                  - client: '192.168.1.4'
-            'efgh5678_doh':
-                address: 'https://d.adguard-dns.com/dns-query/efgh5678'
-                # Matches 192.168.2.1, 192.168.2.2, etc.
-                match:
-                  - client: '192.168.2.0/24'
-            'efgh5678_dot':
-                address: 'tls://efgh5678.d.adguard-dns.com'
-                # Matches 192.168.2.1, 192.168.2.2, etc.
-                match:
-                  - client: '192.168.3.0/24'
-        # Timeout for all outgoing upstream requests and incoming responses.
-        timeout: 2s
-    # DNS fallback settings.
-    fallback:
-        # List of fallback DNS servers to use when all the upstream servers
-        # failed.
-        servers:
-            - address: 'tls://94.140.14.140'
-        # Timeout for all outgoing fallback requests and incoming responses.
-        timeout: 2s
+  # DNS results caching settings.
+  cache:
+    # If true, DNS responses will be cached.
+    enabled: true
+    # Size of common DNS cache.
+    size: 128MB
+    # Size of per-client DNS cache.
+    client_size: 4MB
+  # Serving settings.
+  server:
+    # Configuration for retrying binding listen addresses.  This is useful
+    # when the server starts before the network is ready, e.g. when
+    # installed as Windows service.
+    bind_retry:
+      # If true, the server will retry to bind listen addresses specified
+      # number of times.
+      enabled: true
+      # Time to wait between attempts.
+      interval: 1s
+      # Number of attempts after the first failure.
+      count: 4
+    # Addresses for server to listen to.
+    listen_addresses:
+      - address: '127.0.0.1:53'
+      - address: '192.168.1.1:53'
+    # Configuration for handling duplicate simultaneous requests used to
+    # mitigate cache poisoning attacks.
+    pending_requests:
+      # If true, the server will only perform a single request for each
+      # unique question.  Default is true.
+      enabled: true
+  # DNS bootstrap settings.
+  bootstrap:
+    # List of bootstrap DNS servers to resolve DNS names of upstream
+    # servers.
+    servers:
+      - address: '8.8.8.8:53'
+      - address: '8.8.4.4:53'
+    # Timeout for all outgoing bootstrap requests and incoming responses.
+    timeout: 2s
+  # DNS upstream settings.
+  upstream:
+    # Set of upstream server groups, defined by matching rules.
+    groups:
+      'default':
+        address: 'https://unfiltered.adguard-dns.com/dns-query'
+      'private':
+        address: '192.168.12.34'
+      'office':
+        address: '192.168.12.34'
+        # Matches "www.mycompany.local", "www.jira.mycompany.local",
+        # etc.
+        match:
+          - question_domain: 'mycompany.local'
+      'abcd1234_doh':
+        address: 'https://d.adguard-dns.com/dns-query/abcd1234'
+        # Matches 192.168.1.1 OR 192.168.1.3.
+        match:
+          - client: '192.168.1.1'
+          - client: '192.168.1.3'
+      'abcd1234_dot':
+        address: 'tls://abcd1234.d.adguard-dns.com'
+        # Matches 192.168.1.2 OR 192.168.1.4.
+        match:
+          - client: '192.168.1.2'
+          - client: '192.168.1.4'
+      'efgh5678_doh':
+        address: 'https://d.adguard-dns.com/dns-query/efgh5678'
+        # Matches 192.168.2.1, 192.168.2.2, etc.
+        match:
+          - client: '192.168.2.0/24'
+      'efgh5678_dot':
+        address: 'tls://efgh5678.d.adguard-dns.com'
+        # Matches 192.168.2.1, 192.168.2.2, etc.
+        match:
+          - client: '192.168.3.0/24'
+    # Timeout for all outgoing upstream requests and incoming responses.
+    timeout: 2s
+  # DNS fallback settings.
+  fallback:
+    # List of fallback DNS servers to use when all the upstream servers
+    # failed.
+    servers:
+      - address: 'tls://94.140.14.140'
+    # Timeout for all outgoing fallback requests and incoming responses.
+    timeout: 2s
 # Debugging settings.
 debug:
-    # Profiling settings.
-    pprof:
-        # Port for serving pprof on.
-        port: 6060
-        # If true, pprof server will be started.
-        enabled: false
+  # Profiling settings.
+  pprof:
+    # Port for serving pprof on.
+    port: 6060
+    # If true, pprof server will be started.
+    enabled: false
 # Logging settings.
 log:
-    # Output of the logs.  Value must be an absolute path to the file or one of
-    # the special values: syslog, stdout, stderr.
-    output: 'syslog'
-    # Format of the log entries.  Supported values are: adguard_legacy, default,
-    # json, jsonhybrid, text.  Note that system log entries are in text format.
-    format: 'default'
-    # If true, the log entries will have the timestamp.
-    timestamp: false
-    # If true, the log file will be much more informative.
-    verbose: false
+  # Output of the logs.  Value must be an absolute path to the file or one of
+  # the special values: syslog, stdout, stderr.
+  output: 'syslog'
+  # Format of the log entries.  Supported values are: adguard_legacy, default,
+  # json, jsonhybrid, text.  Note that system log entries are in text format.
+  format: 'default'
+  # If true, the log entries will have the timestamp.
+  timestamp: false
+  # If true, the log file will be much more informative.
+  verbose: false
 # Schema version of this config file.  This is bumped each time the config file
 # format is changed.
 schema_version: 3

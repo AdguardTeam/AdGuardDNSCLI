@@ -3,7 +3,7 @@
 # This comment is used to simplify checking local copies of the Dockerfile.
 # Bump this number every time a significant change is made to this Dockerfile.
 #
-# AdGuard-Project-Version: 11
+# AdGuard-Project-Version: 13
 
 # Dockerfile guidelines:
 #
@@ -28,7 +28,7 @@
 #    needed.  Keep it in sync with bamboo-specs/bamboo.yaml.
 
 # NOTE:  Keep in sync with bamboo-specs/bamboo.yaml.
-ARG BASE_IMAGE=adguard/go-builder:1.26.2--1
+ARG BASE_IMAGE=adguard/go-builder:1.26.3--1
 
 # The dependencies stage is needed to install packages and tool dependencies.
 # This is also where binaries like osslsigncode, which may be required for tests
@@ -46,7 +46,7 @@ RUN \
 	--mount=type=cache,id=gocache,target=/root/.cache/go-build \
 	--mount=type=cache,id=gopath,target=/go \
 <<-'EOF'
-set -e -f -u -x
+set -e -f -o 'pipefail' -u -x
 apt-get update -y
 apt-get dist-upgrade --no-install-recommends -y
 apt-get install --no-install-recommends -y busybox-static
@@ -74,7 +74,7 @@ RUN \
 	--mount=type=cache,id=gocache,target=/root/.cache/go-build \
 	--mount=type=cache,id=gopath,target=/go \
 <<-'EOF'
-set -e -f -u -x
+set -e -f -o 'pipefail' -u -x
 export GOMAXPROCS=2
 make \
 	BRANCH='master' \
@@ -108,7 +108,7 @@ RUN \
 	--mount=type=cache,id=gocache,target=/root/.cache/go-build \
 	--mount=type=cache,id=gopath,target=/go \
 <<-'EOF'
-set -e -f -u -x
+set -e -f -o 'pipefail' -u -x
 
 export GOMAXPROCS=2
 
@@ -175,7 +175,7 @@ RUN \
 	--mount=type=cache,id=gocache,target=/root/.cache/go-build \
 	--mount=type=cache,id=gopath,target=/go \
 <<-'EOF'
-set -e -f -u -x
+set -e -f -o 'pipefail' -u -x
 
 # Import GPG key if provided
 if [ "${GPG_SECRET_KEY:-}" != '' ]; then
@@ -224,7 +224,7 @@ RUN \
 	--mount=type=cache,id=gocache,target=/root/.cache/go-build \
 	--mount=type=cache,id=gopath,target=/go \
 <<-'EOF'
-set -e -f -u -x
+set -e -f -o 'pipefail' -u -x
 
 # Import GPG key if provided
 if [ "${GPG_SECRET_KEY:-}" != '' ]; then

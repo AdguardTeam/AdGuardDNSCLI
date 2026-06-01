@@ -8,9 +8,9 @@ import (
 	"os"
 
 	"github.com/AdguardTeam/AdGuardDNSCLI/internal/dnssvc"
-	"github.com/AdguardTeam/AdGuardDNSCLI/internal/version"
 	"github.com/AdguardTeam/golibs/logutil/slogutil"
 	"github.com/AdguardTeam/golibs/service"
+	"github.com/AdguardTeam/golibs/version"
 	osservice "github.com/kardianos/service"
 )
 
