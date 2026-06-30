@@ -197,6 +197,9 @@ func newDefaultDNSConfig() (c *dnsConfig, err error) {
 			// TODO(e.burkov):  It marshals into an empty slice, but should not
 			// appear in the configuration file at all.
 			Match: nil,
+			Autodevice: &autodeviceConfig{
+				Enabled: false,
+			},
 		},
 	}
 	fallbackServers := []*urlConfig{{

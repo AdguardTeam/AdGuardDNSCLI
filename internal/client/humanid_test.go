@@ -41,7 +41,7 @@ func TestDefaultHumanIDSource_Identify(t *testing.T) {
 
 	src := client.NewDefaultHumanIDSource(&client.DefaultHumanIDSourceConfig{
 		Clock:       clock,
-		ValidityIvl: timeutil.Duration(testValidUntilIvl),
+		ValidityIvl: testValidUntilIvl,
 	})
 
 	testCases := []struct {
@@ -97,7 +97,7 @@ func TestConsequentIDSource_Identify(t *testing.T) {
 
 	srcConf := &client.DefaultHumanIDSourceConfig{
 		Clock:       newTestClock(t, now),
-		ValidityIvl: timeutil.Duration(testValidUntilIvl),
+		ValidityIvl: testValidUntilIvl,
 	}
 
 	noValueErrMsg := errors.ErrNoValue.Error()

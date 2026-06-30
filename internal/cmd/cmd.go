@@ -43,11 +43,11 @@ func Main() {
 	reportPrevErrs(ctx, l, envsErrs, envsLoggerErr, confLoggerErrs)
 
 	prog := &program{
-		conf:    conf,
-		done:    make(chan struct{}),
-		errCh:   make(chan error),
-		logger:  l,
-		logFile: logFile,
+		conf:       conf,
+		done:       make(chan struct{}),
+		errCh:      make(chan error),
+		baseLogger: l,
+		logFile:    logFile,
 	}
 
 	check(ctx, prog, err)
@@ -100,7 +100,7 @@ func check(ctx context.Context, prog *program, err error) {
 		return
 	}
 
-	prog.logger.ErrorContext(ctx, "fatal error", slogutil.KeyError, err)
+	prog.baseLogger.ErrorContext(ctx, "fatal error", slogutil.KeyError, err)
 	prog.closeLogs(ctx)
 
 	os.Exit(osutil.ExitCodeFailure)

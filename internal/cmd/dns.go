@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"context"
+	"fmt"
 	"log/slog"
 	"net/netip"
 
@@ -116,4 +118,68 @@ func (c *ipPortConfig) Validate() (err error) {
 	}
 
 	return validate.NotEmpty("address", c.Address)
+}
+
+// initDNSService creates and starts the DNS service.  c, baseLogger, and
+// svcHdlr must not be nil.
+func initDNSService(
+	ctx context.Context,
+	c *dnsConfig,
+	baseLogger *slog.Logger,
+	svcHdlr *serviceHandler,
+) (err error) {
+	dnsConf, err := newDNSServiceConfig(c, baseLogger, svcHdlr)
+	if err != nil {
+		// Don't wrap the error, because it is informative enough as is.
+		return err
+	}
+
+	dnsSvc, err := dnssvc.New(dnsConf)
+	if err != nil {
+		return fmt.Errorf("creating dns service: %w", err)
+	}
+
+	err = dnsSvc.Start(ctx)
+	if err != nil {
+		return fmt.Errorf("starting dns service: %w", err)
+	}
+
+	svcHdlr.add(dnsSvc)
+
+	return nil
+}
+
+// newDNSServiceConfig builds a new DNS configuration.  c, baseLogger, and
+// svcHdlr must not be nil.
+func newDNSServiceConfig(
+	c *dnsConfig,
+	baseLogger *slog.Logger,
+	svcHdlr *serviceHandler,
+) (conf *dnssvc.Config, err error) {
+	boot, closers, err := newResolvers(c.Bootstrap, baseLogger)
+	if err != nil {
+		return nil, fmt.Errorf("creating resolvers: %w", err)
+	}
+
+	svcHdlr.add(closers)
+
+	var (
+		general    = &proxy.UpstreamConfig{}
+		private    = &proxy.UpstreamConfig{}
+		static     = make(map[netip.Prefix]*proxy.UpstreamConfig)
+		autodevice = make(map[netip.Prefix]client.AutodeviceClientConfig)
+	)
+
+	err = classifyUpstreams(c.Upstream, baseLogger, boot, general, private, static, autodevice)
+	if err != nil {
+		return nil, fmt.Errorf("classifying upstreams: %w", err)
+	}
+
+	cs := newClientStorage(baseLogger, private, static, autodevice, c.Cache)
+
+	svcHdlr.add(cs)
+
+	dnsConf := c.toInternal(baseLogger, cs, general, private, boot)
+
+	return dnsConf, nil
 }

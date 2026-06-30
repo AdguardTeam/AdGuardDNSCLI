@@ -176,6 +176,8 @@ func (svc *DNSService) ServeDNS(
 		return p.Resolve(ctx, dctx)
 	}
 
+	ctx = slogutil.ContextWithLogger(ctx, svc.logger)
+
 	c, ok := svc.clientStorage.ByAddr(ctx, dctx.Addr.Addr())
 	if ok {
 		dctx.CustomUpstreamConfig = c.Upstreams()

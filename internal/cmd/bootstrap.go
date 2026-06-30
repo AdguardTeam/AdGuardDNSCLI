@@ -43,15 +43,15 @@ func (c *bootstrapConfig) Validate() (err error) {
 }
 
 // newResolvers creates a new bootstrap resolver and a list of upstreams to
-// close on shutdown.  conf and l must not be nil.
+// close on shutdown.  conf and baseLogger must not be nil.
 func newResolvers(
 	conf *bootstrapConfig,
-	l *slog.Logger,
+	baseLogger *slog.Logger,
 ) (boot upstream.Resolver, cls closersShutdowner, err error) {
 	defer func() { err = errors.Annotate(err, "creating bootstraps: %w") }()
 
 	opts := &upstream.Options{
-		Logger:  l.With(agdcslog.KeyUpstreamType, agdcslog.UpstreamTypeBootstrap),
+		Logger:  baseLogger.With(agdcslog.KeyUpstreamType, agdcslog.UpstreamTypeBootstrap),
 		Timeout: time.Duration(conf.Timeout),
 	}
 

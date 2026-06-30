@@ -48,7 +48,7 @@ type DefaultHumanIDSourceConfig struct {
 	Clock timeutil.Clock
 
 	// ValidityIvl is a time interval of validity.
-	ValidityIvl timeutil.Duration
+	ValidityIvl time.Duration
 }
 
 // DefaultHumanIDSource is a simple [HumanIDSource] that generates a HumanID

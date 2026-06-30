@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"maps"
 	"net/netip"
+	"net/url"
 	"slices"
 	"strings"
 	"time"
@@ -12,7 +13,6 @@ import (
 	"github.com/AdguardTeam/AdGuardDNSCLI/internal/agdc"
 	"github.com/AdguardTeam/AdGuardDNSCLI/internal/agdcslog"
 	"github.com/AdguardTeam/AdGuardDNSCLI/internal/client"
-	"github.com/AdguardTeam/AdGuardDNSCLI/internal/dnssvc"
 	"github.com/AdguardTeam/dnsproxy/proxy"
 	"github.com/AdguardTeam/dnsproxy/upstream"
 	"github.com/AdguardTeam/golibs/errors"
@@ -61,6 +61,8 @@ type matchSet map[indexedMatch]agdc.UpstreamGroupName
 
 // addMatch returns an error if m conflicts with the ones in s.  name is the
 // name of the group containing m.
+//
+// TODO(e.burkov):  Validate the prefixes don't overlap if not equal.
 func (s matchSet) addMatch(name agdc.UpstreamGroupName, m *upstreamMatchConfig) (err error) {
 	key := m.toIndexedMatch()
 	another, ok := s[key]
@@ -144,6 +146,10 @@ type upstreamGroupConfig struct {
 	// Address is the URL of the upstream server for this group.
 	Address string `yaml:"address"`
 
+	// Autodevice is the configuration for creating upstreams automatically for
+	// this group.
+	Autodevice *autodeviceConfig `yaml:"autodevice"`
+
 	// Match is the set of criteria for choosing this group.
 	Match []*upstreamMatchConfig `yaml:"match"`
 }
@@ -155,8 +161,11 @@ func (c *upstreamGroupConfig) validateAsPredefined() (err error) {
 		return errors.ErrNoValue
 	}
 
+	// TODO(e.burkov):  !! private group doesn't and can't support autodevice.
+
 	return errors.Join(
 		validate.NotEmpty("address", c.Address),
+		errors.Annotate(c.Autodevice.Validate(), "autodevice: %w"),
 		validate.EmptySlice("match", c.Match),
 	)
 }
@@ -170,6 +179,7 @@ func (c *upstreamGroupConfig) validateAsCustom(s matchSet, n agdc.UpstreamGroupN
 
 	errs := []error{
 		validate.NotEmpty("address", c.Address),
+		errors.Annotate(c.Autodevice.Validate(), "autodevice: %w"),
 	}
 
 	for i, m := range c.Match {
@@ -240,50 +250,23 @@ func (c *upstreamMatchConfig) toIndexedMatch() (im indexedMatch) {
 	}
 }
 
-// upstreamConfigs is a set of client-specific upstream configurations.
-type upstreamConfigs map[netip.Prefix]*proxy.UpstreamConfig
-
-// initStaticClients creates a list of clients from confs.  cacheConf must not
-// be nil.
-func (confs upstreamConfigs) initStaticClients(
-	cacheConf *dnssvc.CacheConfig,
-) (clients map[netip.Prefix]*client.StaticClient) {
-	clients = make(map[netip.Prefix]*client.StaticClient, len(confs))
-
-	for cli, conf := range confs {
-		cliConf := proxy.NewCustomUpstreamConfig(
-			conf,
-			cacheConf.Enabled,
-			cacheConf.ClientSize,
-			false,
-		)
-
-		clients[cli] = client.NewStaticClient(cliConf)
-	}
-
-	return clients
-}
-
-// newUpstreams builds the general upstream configuration, client-specific ones,
-// and the private one, if any, from conf.  boot bootstraps the upstreams'
-// domain names.  conf and l must not be nil.
-func newUpstreams(
+func classifyUpstreams(
 	conf *upstreamConfig,
-	l *slog.Logger,
+	baseLogger *slog.Logger,
 	boot upstream.Resolver,
-) (ups upstreamConfigs, private *proxy.UpstreamConfig, err error) {
+	general *proxy.UpstreamConfig,
+	private *proxy.UpstreamConfig,
+	static map[netip.Prefix]*proxy.UpstreamConfig,
+	autodevice map[netip.Prefix]client.AutodeviceClientConfig,
+) (err error) {
 	defer func() { err = errors.Annotate(err, "creating upstreams: %w") }()
 
-	ups = upstreamConfigs{
-		// Init default group.
-		netip.Prefix{}: &proxy.UpstreamConfig{},
-	}
-	upstreams := map[string]upstream.Upstream{}
+	known := map[string]upstream.Upstream{}
 
 	var errs []error
 	for name, g := range conf.Groups {
 		opts := &upstream.Options{
-			Logger: l.With(
+			Logger: baseLogger.With(
 				agdcslog.KeyUpstreamType, agdcslog.UpstreamTypeMain,
 				agdcslog.KeyUpstreamGroup, name,
 			),
@@ -291,28 +274,42 @@ func newUpstreams(
 			Bootstrap: boot,
 		}
 
-		var u upstream.Upstream
-		u, err = newUpstreamOrCached(g.Address, upstreams, opts)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("group %q: %w", name, err))
-
-			continue
-		}
-
-		switch name {
-		case agdc.UpstreamGroupNameDefault:
-			ups[netip.Prefix{}].Upstreams = append(ups[netip.Prefix{}].Upstreams, u)
-		case agdc.UpstreamGroupNamePrivate:
-			if private == nil {
-				private = &proxy.UpstreamConfig{}
-			}
-			private.Upstreams = append(private.Upstreams, u)
-		default:
-			g.addGroup(ups, u)
+		if g.Autodevice.Enabled {
+			err = g.addAutodeviceGroup(autodevice, opts)
+			errs = append(errs, errors.Annotate(err, "group %q: %w", name))
+		} else {
+			err = g.classifyCommonGroup(name, general, private, static, opts, known)
+			errs = append(errs, err)
 		}
 	}
 
-	return ups, private, errors.Join(errs...)
+	return errors.Join(errs...)
+}
+
+func (c *upstreamGroupConfig) classifyCommonGroup(
+	name agdc.UpstreamGroupName,
+	general *proxy.UpstreamConfig,
+	private *proxy.UpstreamConfig,
+	static map[netip.Prefix]*proxy.UpstreamConfig,
+	opts *upstream.Options,
+	known map[string]upstream.Upstream,
+) (err error) {
+	var u upstream.Upstream
+	u, err = newUpstreamOrCached(c.Address, known, opts)
+	if err != nil {
+		// Don't wrap the error, since it's informative enough as is.
+		return err
+	}
+
+	switch name {
+	case agdc.UpstreamGroupNameDefault:
+		general.Upstreams = append(general.Upstreams, u)
+	case agdc.UpstreamGroupNamePrivate:
+		private.Upstreams = append(private.Upstreams, u)
+	default:
+		c.addCommonGroup(general, static, u)
+	}
+	return nil
 }
 
 // newUpstreamOrCached creates a new upstream or returns the cached one from
@@ -336,15 +333,68 @@ func newUpstreamOrCached(
 	return u, nil
 }
 
-// addGroup adds u to the configuration of the corresponding client.
-func (c *upstreamGroupConfig) addGroup(configs upstreamConfigs, u upstream.Upstream) {
+func (c *upstreamGroupConfig) addAutodeviceGroup(
+	autodevice map[netip.Prefix]client.AutodeviceClientConfig,
+	opts *upstream.Options,
+) (err error) {
 	for _, m := range c.Match {
-		cl := m.Client.Prefix
+		cliConf := autodevice[netip.Prefix{}]
 
-		conf := configs[cl]
-		if conf == nil {
-			conf = &proxy.UpstreamConfig{}
-			configs[cl] = conf
+		pref := m.Client.Prefix
+		if pref != (netip.Prefix{}) {
+			cliConf = autodevice[pref]
+			if cliConf == nil {
+				cliConf = client.AutodeviceClientConfig{}
+				autodevice[pref] = cliConf
+			}
+		}
+
+		_, ok := cliConf[m.QuestionDomain]
+		if ok {
+			return fmt.Errorf(
+				"group for client %q and domain %q: %w",
+				pref,
+				m.QuestionDomain,
+				errors.ErrDuplicated,
+			)
+		}
+
+		upsAddr, err := url.Parse(c.Address)
+		if err != nil {
+			return fmt.Errorf(
+				"group for client %q and domain %q: address: %w",
+				pref,
+				m.QuestionDomain,
+				err,
+			)
+		}
+
+		cliConf[m.QuestionDomain] = &client.AutodeviceUpstreamConfig{
+			UpstreamTemplate: upsAddr,
+			DeviceType:       client.DeviceType(c.Autodevice.DeviceType),
+			ProfileID:        client.ProfileID(c.Autodevice.ProfileID),
+			Options:          opts,
+		}
+	}
+
+	return nil
+}
+
+func (c *upstreamGroupConfig) addCommonGroup(
+	general *proxy.UpstreamConfig,
+	static map[netip.Prefix]*proxy.UpstreamConfig,
+	u upstream.Upstream,
+) {
+	for _, m := range c.Match {
+		conf := general
+
+		pref := m.Client.Prefix
+		if pref != (netip.Prefix{}) {
+			conf = static[pref]
+			if conf == nil {
+				conf = &proxy.UpstreamConfig{}
+				static[pref] = conf
+			}
 		}
 
 		domain := m.QuestionDomain
