@@ -1,12 +1,8 @@
 package client
 
 import (
-	"fmt"
-	"strings"
 	"testing"
 
-	"github.com/AdguardTeam/golibs/netutil"
-	"github.com/AdguardTeam/golibs/validate"
 	"github.com/stretchr/testify/require"
 )
 
@@ -39,29 +35,4 @@ func FuzzFQDNToHumanID(f *testing.F) {
 		_, err = newHumanID(string(id))
 		require.NoError(t, err)
 	})
-}
-
-// newHumanID converts a simple string into a HumanID and makes sure that it's
-// valid.  It does not wrap the error to be used in places where that could
-// create additional allocations.
-//
-// NOTE:  Keep in sync with https://github.com/AdguardTeam/AdGuardDNS/blob/3f26cca7e094801647ea6e93503d6ed61c545737/internal/agd/humanid.go#L45.
-func newHumanID(s string) (id HumanID, err error) {
-	err = validate.InRange("s", len(s), minHumanIDLen, maxHumanIDLen)
-	if err != nil {
-		// Don't wrap the error, because the caller should do that.
-		return "", err
-	}
-
-	err = netutil.ValidateHostnameLabel(s)
-	if err != nil {
-		// Don't wrap the error, because the caller should do that.
-		return "", err
-	}
-
-	if i := strings.Index(s, "---"); i >= 0 {
-		return "", fmt.Errorf("at index %d: max 2 consecutive hyphens are allowed", i)
-	}
-
-	return HumanID(s), nil
 }

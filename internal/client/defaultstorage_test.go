@@ -135,3 +135,5 @@ func runSearchesTests(t *testing.T, cs client.Storage, searches []testSearch) {
 		})
 	}
 }
+
+// TODO(e.burkov):  !! add tests
