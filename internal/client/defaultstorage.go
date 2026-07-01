@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"log/slog"
 	"net/netip"
+	"runtime"
 	"slices"
 	"sync"
 	"time"
 
+	"github.com/AdguardTeam/dnsproxy/proxy"
 	"github.com/AdguardTeam/golibs/errors"
 	"github.com/AdguardTeam/golibs/logutil/slogutil"
 	"github.com/AdguardTeam/golibs/service"
@@ -16,14 +18,16 @@ import (
 	"github.com/AdguardTeam/golibs/timeutil"
 )
 
+// unit is a convenience alias for an empty struct.
+type unit = struct{}
+
 // DefaultStorageConfig is a configuration structure for [DefaultStorage].
 type DefaultStorageConfig struct {
 	// Logger is used for logging storage operations.  It must not be nil.
 	Logger *slog.Logger
 
 	// Static is a mapping of IP prefixes to clients that are known in advance.
-	// Each key and value must be valid.  Subnets, which are represented by
-	// prefixes, must not overlap.
+	// Each key and value must be valid.  Prefixes must not overlap.
 	//
 	// TODO(e.burkov):  Consider initializing the upstreams in this package,
 	// instead of passing them from the outside.
@@ -36,11 +40,17 @@ type DefaultStorageConfig struct {
 	// Autodevice is a mapping of IP prefixes to configurations of clients that
 	// should be created automatically on demand.  Empty prefix defines a
 	// default configuration for all addresses that are not covered by other
-	// prefixes, each value must be valid.
+	// prefixes, all of which must be valid and must not overlap.  Each value
+	// must be valid.
 	Autodevice map[netip.Prefix]AutodeviceClientConfig
 
-	// Clock is used to get the current time.  It must not be nil.
-	Clock timeutil.Clock
+	// Clock is used to get the current time and run timers.  It must not be
+	// nil.
+	Clock timeutil.ClockAfter
+
+	// CleanupIvl is the interval at which expired clients are cleaned up.  It
+	// must be positive if Autodevice is not empty.
+	CleanupIvl time.Duration
 
 	// CacheEnabled controls whether dynamically created custom upstream configs
 	// get their own cache.
@@ -52,18 +62,25 @@ type DefaultStorageConfig struct {
 
 // DefaultStorage is a default implementation of the [Storage] interface.
 type DefaultStorage struct {
-	clock         timeutil.Clock
+	clock timeutil.ClockAfter
+
 	humanIDSource HumanIDSource
 
-	logger          *slog.Logger
-	pendingRequests *syncutil.Map[netip.Addr, *searchResult]
+	logger *slog.Logger
+
+	searchQueue *syncutil.Map[netip.Addr, *searchResult]
 
 	// mu protects clients.
 	mu *sync.RWMutex
 
-	autodevice []*autodeviceConfig
+	cleanupDone chan unit
+	autodevice  []*autodeviceConfig
 
+	// clients stores known clients.  It must only be accessed under mu and keep
+	// sorted by prefix.
 	clients []*storedClient
+
+	cleanupIvl time.Duration
 
 	cacheSize    int
 	cacheEnabled bool
@@ -97,15 +114,17 @@ func NewDefaultStorage(c *DefaultStorageConfig) (s *DefaultStorage) {
 	slices.SortStableFunc(autodevice, (*autodeviceConfig).compare)
 
 	return &DefaultStorage{
-		clock:           c.Clock,
-		logger:          c.Logger,
-		humanIDSource:   c.HumanIDSource,
-		cacheEnabled:    c.CacheEnabled,
-		cacheSize:       c.CacheSize,
-		pendingRequests: syncutil.NewMap[netip.Addr, *searchResult](),
-		mu:              &sync.RWMutex{},
-		clients:         clients,
-		autodevice:      autodevice,
+		clock:         c.Clock,
+		logger:        c.Logger,
+		humanIDSource: c.HumanIDSource,
+		cacheEnabled:  c.CacheEnabled,
+		cacheSize:     c.CacheSize,
+		searchQueue:   syncutil.NewMap[netip.Addr, *searchResult](),
+		mu:            &sync.RWMutex{},
+		clients:       clients,
+		cleanupIvl:    c.CleanupIvl,
+		cleanupDone:   make(chan unit),
+		autodevice:    autodevice,
 	}
 }
 
@@ -119,7 +138,7 @@ func (d *DefaultStorage) ByAddr(ctx context.Context, addr netip.Addr) (c Client,
 
 	cli, err := d.queue(ctx, addr)
 	if err != nil {
-		d.logger.ErrorContext(ctx, "queuing client", "addr", addr, slogutil.KeyError, err)
+		d.logger.DebugContext(ctx, "queuing client", "addr", addr, slogutil.KeyError, err)
 
 		return nil, false
 	} else if cli != nil {
@@ -132,27 +151,42 @@ func (d *DefaultStorage) ByAddr(ctx context.Context, addr netip.Addr) (c Client,
 	}
 
 	for _, cli := range d.autodevice {
-		// TODO(e.burkov):  !! handle empty prefix
-		if !cli.prefix.Contains(addr) {
+		if cli.prefix != (netip.Prefix{}) && !cli.prefix.Contains(addr) {
 			continue
 		}
 
-		c, err = d.initAutodeviceClient(ctx, addr, cli)
+		c, err = d.newAutodeviceClient(ctx, addr, cli)
 		if err != nil {
-			d.logger.ErrorContext(ctx, "initializing autodevice client", "addr", addr, slogutil.KeyError, err)
+			d.logger.ErrorContext(ctx, "initializing client", "addr", addr, slogutil.KeyError, err)
 
 			return nil, false
 		}
+
+		return c, true
 	}
+
+	err = errors.ErrNoValue
+	d.logger.DebugContext(ctx, "searching client", "addr", addr, slogutil.KeyError, err)
 
 	return nil, false
 }
 
 // type check
-var _ service.Shutdowner = (*DefaultStorage)(nil)
+var _ service.Interface = (*DefaultStorage)(nil)
+
+// Start implements the [osservice.Interface] interface for *DefaultStorage.
+func (d *DefaultStorage) Start(ctx context.Context) (err error) {
+	if len(d.autodevice) > 0 {
+		go d.sanitize(ctx)
+	}
+
+	return nil
+}
 
 // Shutdown implements the [service.Shutdowner] interface for *DefaultStorage.
 func (d *DefaultStorage) Shutdown(ctx context.Context) (err error) {
+	close(d.cleanupDone)
+
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
@@ -194,9 +228,9 @@ func (d *DefaultStorage) findValidClient(addr netip.Addr) (c Client, ok bool) {
 	return nil, false
 }
 
-// initAutodeviceClient initializes an autodevice client for the given address
+// newAutodeviceClient initializes an autodevice client for the given address
 // and configuration.
-func (d *DefaultStorage) initAutodeviceClient(
+func (d *DefaultStorage) newAutodeviceClient(
 	ctx context.Context,
 	addr netip.Addr,
 	c *autodeviceConfig,
@@ -206,10 +240,15 @@ func (d *DefaultStorage) initAutodeviceClient(
 		return nil, err
 	}
 
-	cli = newAutodeviceClient(id.ID, c)
+	cli, err = newAutodeviceClient(id.ID, c)
+	if err != nil {
+		return nil, fmt.Errorf("creating autodevice client for %q: %w", addr, err)
+	}
 
 	sc := &storedClient{
-		client:     cli,
+		client: cli,
+		// For autodevice clients use the exact address as the prefix, so that
+		// it is not used for other addresses.
 		prefix:     netip.PrefixFrom(addr, addr.BitLen()),
 		validUntil: id.Until,
 	}
@@ -231,19 +270,22 @@ func (d *DefaultStorage) initAutodeviceClient(
 // deduplicate concurrent searches for the same address.
 type searchResult struct {
 	// finished is closed when the search is finished, and cli and err are set.
-	finished chan struct{}
+	finished chan unit
 	cli      Client
 	err      error
 }
 
-// queue adds a search for addr to the queue of pending searches.  addr must be
-// valid.  It returns
+// queue adds a search request for addr to the queue, if another search for the
+// same address is already in progress and returns the result of the first
+// search, blocking until it is finished.  If the search for addr is the first
+// one, it returns nil Client and nil error, and the caller must perform the
+// search and call [DefaultStorage.done] when finished.  addr must be valid.
 func (d *DefaultStorage) queue(ctx context.Context, addr netip.Addr) (c Client, err error) {
 	res := &searchResult{
-		finished: make(chan struct{}),
+		finished: make(chan unit),
 	}
 
-	res, loaded := d.pendingRequests.LoadOrStore(addr, res)
+	res, loaded := d.searchQueue.LoadOrStore(addr, res)
 	if loaded {
 		select {
 		case <-res.finished:
@@ -256,11 +298,11 @@ func (d *DefaultStorage) queue(ctx context.Context, addr netip.Addr) (c Client, 
 	return nil, nil
 }
 
-// done marks the search for addr as finished, and sets the result to cli and
-// err.  addr must be valid, either cli or err must not be nil.  It must only be
+// done marks the search for addr finished, and sets the result to cli and err.
+// addr must be valid, either cli or err must not be nil.  It must only be
 // called once per addr.
 func (d *DefaultStorage) done(addr netip.Addr, cli Client, err error) {
-	res, ok := d.pendingRequests.Load(addr)
+	res, ok := d.searchQueue.Load(addr)
 	if !ok {
 		panic(fmt.Errorf("autodevice result for %q: %w", addr, errors.ErrNoValue))
 	}
@@ -269,7 +311,7 @@ func (d *DefaultStorage) done(addr netip.Addr, cli Client, err error) {
 	res.err = err
 
 	close(res.finished)
-	d.pendingRequests.Delete(addr)
+	d.searchQueue.Delete(addr)
 }
 
 // storedClient is a client stored in [DefaultStorage].
@@ -288,4 +330,46 @@ func (s *storedClient) isStillValid(now time.Time) (ok bool) {
 // nil.
 func (s *storedClient) compare(other *storedClient) (res int) {
 	return s.prefix.Compare(other.prefix)
+}
+
+// sanitize periodically cleans up expired clients from the storage.  It's
+// intended to be run in a separate goroutine.
+func (d *DefaultStorage) sanitize(ctx context.Context) {
+	for {
+		select {
+		case now := <-d.clock.After(d.cleanupIvl):
+			d.cleanExpired(ctx, now)
+		case <-ctx.Done():
+			d.logger.ErrorContext(ctx, "sanitizing loop finished", slogutil.KeyError, ctx.Err())
+
+			return
+		case <-d.cleanupDone:
+			d.logger.DebugContext(ctx, "sanitizing loop finished")
+
+			return
+		}
+	}
+}
+
+// cleanExpired removes expired clients from the storage.
+func (d *DefaultStorage) cleanExpired(ctx context.Context, now time.Time) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	d.clients = slices.DeleteFunc(d.clients, func(c *storedClient) (remove bool) {
+		if c.isStillValid(now) {
+			return false
+		}
+
+		// Use a finalizer to close the upstreams of the expired client, so that
+		// it's not closed while it's still in use by other goroutines.
+		runtime.AddCleanup(c, func(uc *proxy.CustomUpstreamConfig) {
+			err := uc.Close()
+			if err != nil {
+				d.logger.ErrorContext(ctx, "cleaning expired clients", slogutil.KeyError, err)
+			}
+		}, c.client.Upstreams())
+
+		return true
+	})
 }

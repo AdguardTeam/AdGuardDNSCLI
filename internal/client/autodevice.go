@@ -2,11 +2,11 @@ package client
 
 import (
 	"fmt"
+	"maps"
 	"net/netip"
 	"net/url"
-	"runtime"
+	"slices"
 	"strings"
-	"sync"
 
 	"github.com/AdguardTeam/dnsproxy/proxy"
 	"github.com/AdguardTeam/dnsproxy/upstream"
@@ -17,9 +17,14 @@ import (
 
 // Constants for valid encrypted DNS upstream schemes.
 const (
-	schemeHTTPS = "https"
-	schemeQUIC  = "quic"
-	schemeTLS   = "tls"
+	// SchemeHTTPS is the scheme for DNS-over-HTTPS upstreams.
+	SchemeHTTPS = "https"
+
+	// SchemeQUIC is the scheme for DNS-over-QUIC upstreams.
+	SchemeQUIC = "quic"
+
+	// SchemeTLS is the scheme for DNS-over-TLS upstreams.
+	SchemeTLS = "tls"
 )
 
 // AutodeviceUpstreamConfig defines the configuration for clients that are
@@ -28,14 +33,12 @@ type AutodeviceUpstreamConfig struct {
 	// UpstreamTemplate is a template for creating upstream configurations for
 	// new clients.  It must be valid and have an encrypted DNS protocol scheme,
 	// i.e.:
-	//  - https
-	//  - quic
-	//  - tls
+	//  - [SchemeHTTPS]
+	//  - [SchemeQUIC]
+	//  - [SchemeTLS]
 	UpstreamTemplate *url.URL
 
 	// Options are used to create dynamic upstreams.
-	//
-	// TODO(e.burkov):  !! Consider adding contracts.
 	Options *upstream.Options
 
 	// DeviceType specifies the type of device that will be created for new
@@ -45,44 +48,6 @@ type AutodeviceUpstreamConfig struct {
 	// ProfileID specifies the profile to which new clients will be added.  It
 	// must be valid.
 	ProfileID ProfileID
-}
-
-// AutodeviceClientConfig is the mapping of question domains to autodevice
-// client configurations.  Its keys, if not empty, must be valid non-FQDN domain
-// names.  Its values must be valid.
-type AutodeviceClientConfig map[string]*AutodeviceUpstreamConfig
-
-// Validate returns an error if c is not valid.
-//
-// TODO(e.burkov):  !! perhaps, remove.
-func (c *AutodeviceUpstreamConfig) Validate() (err error) {
-	switch {
-	case c == nil:
-		return errors.ErrNoValue
-	case c.UpstreamTemplate == nil:
-		return errors.Error("upstream template: no value")
-	}
-
-	scheme := strings.ToLower(c.UpstreamTemplate.Scheme)
-	switch scheme {
-	case schemeHTTPS:
-		if c.UpstreamTemplate.Host == "" {
-			return errors.Error("upstream template: empty host")
-		}
-	case schemeQUIC, schemeTLS:
-		host := c.UpstreamTemplate.Hostname()
-		if host == "" {
-			return errors.Error("upstream template: empty host")
-		}
-
-		if ip, ipErr := netip.ParseAddr(host); ipErr == nil && ip.IsValid() {
-			return errors.Error("upstream template: ip host is not supported")
-		}
-	default:
-		return fmt.Errorf("upstream template: unsupported scheme %q", c.UpstreamTemplate.Scheme)
-	}
-
-	return nil
 }
 
 // address returns an upstream address for a client with id.  id must be valid.
@@ -98,9 +63,9 @@ func (c *AutodeviceUpstreamConfig) address(id HumanID) (addr string, err error) 
 	tmpl := netutil.CloneURL(c.UpstreamTemplate)
 
 	switch strings.ToLower(tmpl.Scheme) {
-	case schemeHTTPS:
+	case SchemeHTTPS:
 		return tmpl.JoinPath(extID).String(), nil
-	case schemeQUIC, schemeTLS:
+	case SchemeQUIC, SchemeTLS:
 		tmpl.Host = extID + "." + tmpl.Host
 
 		return tmpl.String(), nil
@@ -109,28 +74,60 @@ func (c *AutodeviceUpstreamConfig) address(id HumanID) (addr string, err error) 
 	}
 }
 
-// autodeviceClient is a dynamic client configuration matched by subnet.
-type autodeviceClient struct {
-	initOnce     func() (uc *proxy.CustomUpstreamConfig)
-	conf         AutodeviceClientConfig
-	humanID      HumanID
-	cacheSize    int
-	cacheEnabled bool
-}
+// AutodeviceClientConfig is the mapping of question domains to autodevice
+// client configurations.  Its keys, if not empty, must be valid non-FQDN domain
+// names.  Its values must be valid.
+type AutodeviceClientConfig map[string]*AutodeviceUpstreamConfig
 
-// newAutodeviceClient creates a new autodevice client with the given
-// human-readable identifier and configuration.  hid and conf must be valid.
-func newAutodeviceClient(hid HumanID, c *autodeviceConfig) (cli Client) {
-	autoCli := &autodeviceClient{
-		humanID:      hid,
-		conf:         c.conf,
-		cacheSize:    c.cacheSize,
-		cacheEnabled: c.cacheEnabled,
+// toInternal converts the AutodeviceClientConfig into a proxy.UpstreamConfig.
+// hid must be valid.
+func (conf AutodeviceClientConfig) toInternal(hid HumanID) (uc *proxy.UpstreamConfig, err error) {
+	upsConf := &proxy.UpstreamConfig{}
+	defer func() {
+		if err != nil {
+			err = errors.WithDeferred(err, upsConf.Close())
+		}
+	}()
+
+	known := map[string]upstream.Upstream{}
+
+	for _, domain := range slices.Sorted(maps.Keys(conf)) {
+		domainConf := conf[domain]
+
+		var addr string
+		addr, err = domainConf.address(hid)
+		if err != nil {
+			return nil, fmt.Errorf("building upstream address for domain %q: %w", domain, err)
+		}
+
+		var u upstream.Upstream
+		u, err = newUpstreamOrCached(addr, known, domainConf.Options)
+		if err != nil {
+			return nil, fmt.Errorf("creating upstream for domain %q: %w", domain, err)
+		}
+
+		addUpstream(upsConf, domain, u)
 	}
 
-	autoCli.initOnce = sync.OnceValue(autoCli.initUpstreams)
+	return upsConf, nil
+}
 
-	return autoCli
+// autodeviceClient is a dynamic client configuration matched by subnet.
+type autodeviceClient struct {
+	conf *proxy.CustomUpstreamConfig
+}
+
+// newAutodeviceClient creates a new autodevice client with hid and c.  hid must
+// be valid, c must not be nil.
+func newAutodeviceClient(hid HumanID, c *autodeviceConfig) (cli *autodeviceClient, err error) {
+	upsConf, err := c.conf.toInternal(hid)
+	if err != nil {
+		return nil, fmt.Errorf("creating upstream configuration for autodevice client: %w", err)
+	}
+
+	return &autodeviceClient{
+		conf: proxy.NewCustomUpstreamConfig(upsConf, c.cacheEnabled, c.cacheSize, false),
+	}, nil
 }
 
 // type check
@@ -138,34 +135,7 @@ var _ Client = (*autodeviceClient)(nil)
 
 // Upstreams implements the [Client] interface for *autodeviceClient.
 func (c *autodeviceClient) Upstreams() (uc *proxy.CustomUpstreamConfig) {
-	return c.initOnce()
-}
-
-// initUpstreams initializes the upstream configuration for the autodevice
-// client.
-func (c *autodeviceClient) initUpstreams() (uc *proxy.CustomUpstreamConfig) {
-	upstreams := map[string]upstream.Upstream{}
-	upsConf := &proxy.UpstreamConfig{}
-	for domain, conf := range c.conf {
-		addr, err := conf.address(c.humanID)
-		if err != nil {
-			panic(fmt.Errorf("building upstream address for domain %q: %w", domain, err))
-		}
-
-		u, err := newUpstreamOrCached(addr, upstreams, conf.Options)
-		if err != nil {
-			panic(fmt.Errorf("creating upstream for domain %q: %w", domain, err))
-		}
-
-		addUpstream(upsConf, domain, u)
-	}
-
-	runtime.AddCleanup(c, func(c *proxy.UpstreamConfig) {
-		// TODO(e.burkov):  !! log
-		_ = c.Close()
-	}, upsConf)
-
-	return proxy.NewCustomUpstreamConfig(upsConf, c.cacheEnabled, c.cacheSize, false)
+	return c.conf
 }
 
 // newUpstreamOrCached creates a new upstream or returns the cached one from
@@ -223,8 +193,20 @@ type autodeviceConfig struct {
 	cacheEnabled bool
 }
 
-// compare is a method for sorting autodevice configurations by prefix.  other
-// must not be nil.
+// compare is a method for sorting autodevice configurations by prefix.  Empty
+// prefix is sorted last, so that it is only used if no other configuration
+// matches.  other must not be nil.
 func (c *autodeviceConfig) compare(other *autodeviceConfig) (res int) {
-	return c.prefix.Compare(other.prefix)
+	switch {
+	case c.prefix == (netip.Prefix{}):
+		if other.prefix == (netip.Prefix{}) {
+			return 0
+		}
+
+		return 1
+	case other.prefix == (netip.Prefix{}):
+		return -1
+	default:
+		return c.prefix.Compare(other.prefix)
+	}
 }
