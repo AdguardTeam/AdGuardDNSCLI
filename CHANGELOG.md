@@ -7,14 +7,22 @@ The format is based on [*Keep a Changelog*](https://keepachangelog.com/en/1.0.0/
 ## [Unreleased]
 
 <!--
-## [v0.1.2] - 2026-03-12 (APPROX.)
+## [v0.2.1] - 2026-08-01 (APPROX.)
 
-See also the [v0.1.2 GitHub milestone][ms-v0.1.2].
+See also the [v0.2.1 GitHub milestone][ms-v0.2.1].
 
-[ms-v0.1.2]: https://github.com/AdguardTeam/AdGuardDNSCLI/milestone/7?closed=1
+[ms-v0.2.1]: https://github.com/AdguardTeam/AdGuardDNSCLI/milestone/8?closed=1
 
 NOTE: Add new changes BELOW THIS COMMENT.
 -->
+
+<!--
+NOTE: Add new changes ABOVE THIS COMMENT.
+-->
+
+## [v0.2.0] - 2026-07-14
+
+See also the [v0.2.0 GitHub milestone][ms-v0.2.0].
 
 ### Security
 
@@ -68,10 +76,7 @@ To rollback this change, remove every `dns.upstream.groups.*.autodevice` object 
 
 [go-1.26.5]:     https://groups.google.com/g/golang-announce/c/OrmQE_Yp5Sc
 [kb-autodevice]: https://adguard-dns.io/kb/dns-client/configuration/#dns-upstream
-
-<!--
-NOTE: Add new changes ABOVE THIS COMMENT.
--->
+[ms-v0.2.0]:     https://github.com/AdguardTeam/AdGuardDNSCLI/milestone/7?closed=1
 
 ## [v0.1.1] - 2026-02-12
 
@@ -248,11 +253,12 @@ See also the [v0.0.2 GitHub milestone][ms-v0.0.2].
 - Everything!
 
 <!--
-[Unreleased]: https://github.com/AdguardTeam/AdGuardDNSCLI/compare/v0.1.2...HEAD
-[v0.1.2]:     https://github.com/AdguardTeam/AdGuardDNSCLI/compare/v0.1.1...v0.1.2
+[Unreleased]: https://github.com/AdguardTeam/AdGuardDNSCLI/compare/v0.2.1...HEAD
+[v0.2.1]:     https://github.com/AdguardTeam/AdGuardDNSCLI/compare/v0.2.0...v0.2.1
 -->
 
-[Unreleased]: https://github.com/AdguardTeam/AdGuardDNSCLI/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/AdguardTeam/AdGuardDNSCLI/compare/v0.2.0...HEAD
+[v0.2.0]:     https://github.com/AdguardTeam/AdGuardDNSCLI/compare/v0.1.1...v0.2.0
 [v0.1.1]:     https://github.com/AdguardTeam/AdGuardDNSCLI/compare/v0.1.0...v0.1.1
 [v0.1.0]:     https://github.com/AdguardTeam/AdGuardDNSCLI/compare/v0.0.4...v0.1.0
 [v0.0.4]:     https://github.com/AdguardTeam/AdGuardDNSCLI/compare/v0.0.3...v0.0.4
