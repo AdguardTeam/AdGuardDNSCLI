@@ -16,6 +16,17 @@ See also the [v0.2.1 GitHub milestone][ms-v0.2.1].
 NOTE: Add new changes BELOW THIS COMMENT.
 -->
 
+### Added
+
+- A Debug HTTP API for runtime profiling via `pprof`.  The API serves `pprof` endpoints under the `/private/pprof/` path and is disabled by default.  To enable it, configure the `debug.pprof` object in the configuration file:
+
+    ```yaml
+    debug:
+        pprof:
+            enabled: true
+            port: 6060
+    ```
+
 <!--
 NOTE: Add new changes ABOVE THIS COMMENT.
 -->

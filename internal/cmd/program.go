@@ -5,9 +5,13 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net/netip"
 	"os"
 
+	"github.com/AdguardTeam/AdGuardDNSCLI/internal/debugsvc"
+	"github.com/AdguardTeam/golibs/errors"
 	"github.com/AdguardTeam/golibs/logutil/slogutil"
+	"github.com/AdguardTeam/golibs/netutil"
 	"github.com/AdguardTeam/golibs/service"
 	"github.com/AdguardTeam/golibs/version"
 	osservice "github.com/kardianos/service"
@@ -54,6 +58,18 @@ func (prog *program) Start(_ osservice.Service) (err error) {
 	)
 
 	svcHdlr := newServiceHandler(prog.done, service.SignalHandlerShutdownTimeout)
+
+	if prog.conf.Debug.Pprof.Enabled {
+		debugSvc := debugsvc.New(&debugsvc.Config{
+			Logger: prog.baseLogger.With(slogutil.KeyPrefix, "debugsvc"),
+			// TODO(m.kazantsev):  Consider making configurable.
+			InitialAddr: netip.AddrPortFrom(netutil.IPv4Localhost(), prog.conf.Debug.Pprof.Port),
+		})
+
+		errors.Check(debugSvc.Start(ctx))
+
+		svcHdlr.add(debugSvc)
+	}
 
 	err = initDNSService(ctx, prog.conf.DNS, prog.baseLogger, svcHdlr)
 	if err != nil {
