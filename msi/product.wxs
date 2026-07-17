@@ -79,6 +79,15 @@
     />
 
     <!--
+      Use a custom property for adding installation directory to PATH.
+      Default to "1" (enabled).
+    -->
+    <Property
+        Id="ADD_TO_PATH"
+        Value="1"
+    />
+
+    <!--
       Determine the path to cmd.exe dynamically.
     -->
     <Property
@@ -133,6 +142,17 @@
                 DiskId="1"
                 Source="$(var.BuildDir)/LICENSE.txt"
             />
+            <Environment
+                Id="AddToPath"
+                Name="PATH"
+                Value="[INSTALLDIR]"
+                Action="set"
+                Part="last"
+                System="yes"
+                Permanent="no"
+            >
+              <Condition>AddToPath</Condition>
+            </Environment>
           </Component
           >
         </Directory
