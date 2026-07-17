@@ -92,7 +92,5 @@
   PrerequisitesUpdateText="Click Update to update [ProductName] from your computer. Click Back to review or change any of your installation settings. Click Cancel to exit the wizard." ?>
   <?define
   PrerequisitesDeleteConfigurationCheckBoxText="Delete [ProductName] configuration file." ?>
-  <?define
-  PrerequisitesAddToPathCheckBoxText="Add installation directory to PATH" ?>
 </Include
 >
