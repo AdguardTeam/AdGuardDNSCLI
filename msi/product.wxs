@@ -95,6 +95,15 @@
     />
 
     <!--
+      Use a custom property for adding installation directory to PATH.
+      Default to "1" (enabled).
+    -->
+    <Property
+        Id="ADD_TO_PATH"
+        Value="1"
+    />
+
+    <!--
       Describe the installed resources layout, see
       https://wixtoolset.org/docs/v3/xsd/wix/directory.
     -->
@@ -133,6 +142,14 @@
                 DiskId="1"
                 Source="$(var.BuildDir)/LICENSE.txt"
             />
+          </Component
+          >
+          <Component
+              Id="PathComponent"
+              Guid="$(var.PathComponentGUID)"
+              Win64="$(var.ComponentWin64)"
+            >
+            <Condition>ADD_TO_PATH=1</Condition>
             <Environment
                 Id="AddToPath"
                 Name="PATH"
@@ -161,6 +178,9 @@
       >
       <ComponentRef
           Id="MainExecutable"
+      />
+      <ComponentRef
+          Id="PathComponent"
       />
     </Feature
     >

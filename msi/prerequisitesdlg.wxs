@@ -311,6 +311,19 @@
             ShowCondition="NOT Installed"
         />
         <Control
+            Id="AddToPathCheckBox"
+            Type="CheckBox"
+            X="25"
+            Y="200"
+            Width="220"
+            Height="40"
+            Hidden="yes"
+            Property="ADD_TO_PATH"
+            CheckBoxValue="1"
+            Text="$(var.PrerequisitesAddToPathCheckBoxText)"
+            ShowCondition="NOT Installed"
+        />
+        <Control
             Id="ChangeTitle"
             Type="Text"
             X="15"
