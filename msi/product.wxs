@@ -151,7 +151,7 @@
             >
             <Condition>ADD_TO_PATH=1</Condition>
             <Environment
-                Id="AddToPath"
+                Id="AddToPATH"
                 Name="PATH"
                 Value="[INSTALLDIR]"
                 Action="set"

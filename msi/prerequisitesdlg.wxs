@@ -273,44 +273,7 @@
         <!--
           For all labels use preprocessor variables to define the content.
         -->
-        <Control
-            Id="InstallTitle"
-            Type="Text"
-            X="15"
-            Y="15"
-            Width="300"
-            Height="15"
-            Transparent="yes"
-            NoPrefix="yes"
-            Hidden="yes"
-            Text="$(var.PrerequisitesInstallTitle)"
-            ShowCondition="NOT Installed"
-        />
-        <Control
-            Id="InstallText"
-            Type="Text"
-            X="25"
-            Y="70"
-            Width="320"
-            Height="80"
-            Hidden="yes"
-            Text="$(var.PrerequisitesInstallText)"
-            ShowCondition="NOT Installed"
-        />
-        <Control
-            Id="StartAfterInstallCheckBox"
-            Type="CheckBox"
-            X="25"
-            Y="160"
-            Width="220"
-            Height="40"
-            Hidden="yes"
-            Property="START_AFTER_INSTALL"
-            CheckBoxValue="1"
-            Text="$(var.PrerequisitesStartCheckBoxText)"
-            ShowCondition="NOT Installed"
-        />
-        <Control
+         <Control
             Id="AddToPathCheckBox"
             Type="CheckBox"
             X="25"
@@ -322,6 +285,17 @@
             CheckBoxValue="1"
             Text="$(var.PrerequisitesAddToPathCheckBoxText)"
             ShowCondition="NOT Installed"
+        />
+        <Control
+            Id="ChangeText"
+            Type="Text"
+            X="25"
+            Y="70"
+            Width="320"
+            Height="80"
+            Hidden="yes"
+            Text="$(var.PrerequisitesChangeText)"
+            ShowCondition="WixUI_InstallMode = &quot;Change&quot;"
         />
         <Control
             Id="ChangeTitle"
@@ -337,18 +311,31 @@
             ShowCondition="WixUI_InstallMode = &quot;Change&quot;"
         />
         <Control
-            Id="ChangeText"
+            Id="DeleteConfigurationCheckBox"
+            Type="CheckBox"
+            X="25"
+            Y="160"
+            Width="220"
+            Height="40"
+            Hidden="yes"
+            Property="DELETE_CONFIGURATION"
+            CheckBoxValue="1"
+            Text="$(var.PrerequisitesDeleteConfigurationCheckBoxText)"
+            ShowCondition="WixUI_InstallMode = &quot;Remove&quot;"
+        />
+        <Control
+            Id="InstallText"
             Type="Text"
             X="25"
             Y="70"
             Width="320"
             Height="80"
             Hidden="yes"
-            Text="$(var.PrerequisitesChangeText)"
-            ShowCondition="WixUI_InstallMode = &quot;Change&quot;"
+            Text="$(var.PrerequisitesInstallText)"
+            ShowCondition="NOT Installed"
         />
         <Control
-            Id="RepairTitle"
+            Id="InstallTitle"
             Type="Text"
             X="15"
             Y="15"
@@ -357,11 +344,11 @@
             Transparent="yes"
             NoPrefix="yes"
             Hidden="yes"
-            Text="$(var.PrerequisitesRepairTitle)"
-            ShowCondition="WixUI_InstallMode = &quot;Repair&quot;"
+            Text="$(var.PrerequisitesInstallTitle)"
+            ShowCondition="NOT Installed"
         />
         <Control
-            Id="RepairText"
+            Id="RemoveText"
             Type="Text"
             X="25"
             Y="70"
@@ -369,8 +356,8 @@
             Height="80"
             Hidden="yes"
             NoPrefix="yes"
-            Text="$(var.PrerequisitesRepairText)"
-            ShowCondition="WixUI_InstallMode = &quot;Repair&quot;"
+            Text="$(var.PrerequisitesRemoveText)"
+            ShowCondition="WixUI_InstallMode = &quot;Remove&quot;"
         />
         <Control
             Id="RemoveTitle"
@@ -386,7 +373,7 @@
             ShowCondition="WixUI_InstallMode = &quot;Remove&quot;"
         />
         <Control
-            Id="RemoveText"
+            Id="RepairText"
             Type="Text"
             X="25"
             Y="70"
@@ -394,21 +381,46 @@
             Height="80"
             Hidden="yes"
             NoPrefix="yes"
-            Text="$(var.PrerequisitesRemoveText)"
-            ShowCondition="WixUI_InstallMode = &quot;Remove&quot;"
+            Text="$(var.PrerequisitesRepairText)"
+            ShowCondition="WixUI_InstallMode = &quot;Repair&quot;"
         />
         <Control
-            Id="DeleteConfigurationCheckBox"
+            Id="RepairTitle"
+            Type="Text"
+            X="15"
+            Y="15"
+            Width="300"
+            Height="15"
+            Transparent="yes"
+            NoPrefix="yes"
+            Hidden="yes"
+            Text="$(var.PrerequisitesRepairTitle)"
+            ShowCondition="WixUI_InstallMode = &quot;Repair&quot;"
+        />
+        <Control
+            Id="StartAfterInstallCheckBox"
             Type="CheckBox"
             X="25"
             Y="160"
             Width="220"
             Height="40"
             Hidden="yes"
-            Property="DELETE_CONFIGURATION"
+            Property="START_AFTER_INSTALL"
             CheckBoxValue="1"
-            Text="$(var.PrerequisitesDeleteConfigurationCheckBoxText)"
-            ShowCondition="WixUI_InstallMode = &quot;Remove&quot;"
+            Text="$(var.PrerequisitesStartCheckBoxText)"
+            ShowCondition="NOT Installed"
+        />
+        <Control
+            Id="UpdateText"
+            Type="Text"
+            X="25"
+            Y="70"
+            Width="320"
+            Height="80"
+            Hidden="yes"
+            NoPrefix="yes"
+            Text="$(var.PrerequisitesUpdateText)"
+            ShowCondition="WixUI_InstallMode = &quot;Update&quot;"
         />
         <Control
             Id="UpdateTitle"
@@ -421,18 +433,6 @@
             NoPrefix="yes"
             Hidden="yes"
             Text="$(var.PrerequisitesUpdateTitle)"
-            ShowCondition="WixUI_InstallMode = &quot;Update&quot;"
-        />
-        <Control
-            Id="UpdateText"
-            Type="Text"
-            X="25"
-            Y="70"
-            Width="320"
-            Height="80"
-            Hidden="yes"
-            NoPrefix="yes"
-            Text="$(var.PrerequisitesUpdateText)"
             ShowCondition="WixUI_InstallMode = &quot;Update&quot;"
         />
 
