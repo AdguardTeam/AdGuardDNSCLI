@@ -152,20 +152,28 @@
 
             docker info
 
+            # Disable xtrace so the expanded secret values aren't printed to the
+            # build log.
+            set +x
+            export GPG_KEY_PASSPHRASE="${bamboo_gpgPassword}"
+            export GPG_SECRET_KEY="${bamboo_gpgSecretKeyPart1}${bamboo_gpgSecretKeyPart2}"
+            export SIGNER_API_KEY="${bamboo_adguardDnsClientWinSignerSecretApiKey}"
+            set -x
+
             docker build \
                 --build-arg "BASE_IMAGE=${bamboo_dockerGo}" \
                 --build-arg "BRANCH=${bamboo_planRepository_branchName}" \
                 --build-arg "CACHE_BUSTER=${bamboo_cacheBuster}" \
                 --build-arg "CHANNEL=${bamboo_channel}" \
                 --build-arg "DEPLOY_SCRIPT_PATH=./deploy.sh" \
-                --build-arg "GPG_SECRET_KEY=${bamboo_gpgSecretKeyPart1}${bamboo_gpgSecretKeyPart2}" \
-                --build-arg "GPG_KEY_PASSPHRASE=${bamboo_gpgPassword}" \
                 --build-arg "REVISION=${bamboo_repository_revision_number}" \
-                --build-arg "SIGNER_API_KEY=${bamboo_adguardDnsClientWinSignerSecretApiKey}" \
                 --build-arg "SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)" \
                 --build-arg "VERSION=$version" \
                 --output '.' \
                 --progress 'plain' \
+                --secret id=GPG_KEY_PASSPHRASE \
+                --secret id=GPG_SECRET_KEY \
+                --secret id=SIGNER_API_KEY \
                 --target 'builder-exporter' \
                 -f ./docker/ci.Dockerfile \
                 .
@@ -221,20 +229,28 @@
 
             docker info
 
+            # Disable xtrace so the expanded secret values aren't printed to the
+            # build log.
+            set +x
+            export GPG_KEY_PASSPHRASE="${bamboo_gpgPassword}"
+            export GPG_SECRET_KEY="${bamboo_gpgSecretKeyPart1}${bamboo_gpgSecretKeyPart2}"
+            export SIGNER_API_KEY="${bamboo_adguardDnsClientWinSignerSecretApiKey}"
+            set -x
+
             docker build \
                 --build-arg "BASE_IMAGE=${bamboo_dockerGo}" \
                 --build-arg "BRANCH=${bamboo_planRepository_branchName}" \
                 --build-arg "CACHE_BUSTER=${bamboo_cacheBuster}" \
                 --build-arg "CHANNEL=${bamboo_channel}" \
                 --build-arg "DEPLOY_SCRIPT_PATH=./deploy.sh" \
-                --build-arg "GPG_SECRET_KEY=${bamboo_gpgSecretKeyPart1}${bamboo_gpgSecretKeyPart2}" \
-                --build-arg "GPG_KEY_PASSPHRASE=${bamboo_gpgPassword}" \
                 --build-arg "REVISION=${bamboo_repository_revision_number}" \
-                --build-arg "SIGNER_API_KEY=${bamboo_adguardDnsClientWinSignerSecretApiKey}" \
                 --build-arg "SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)" \
                 --build-arg "VERSION=$version" \
                 --output '.' \
                 --progress 'plain' \
+                --secret id=GPG_KEY_PASSPHRASE \
+                --secret id=GPG_SECRET_KEY \
+                --secret id=SIGNER_API_KEY \
                 --target 'qa-builder-exporter' \
                 -f ./docker/ci.Dockerfile \
                 .
@@ -274,10 +290,12 @@
 
             cd "${bamboo.name}/dist/"
 
-            env\
-                GITHUB_TOKEN="${bamboo.githubPublicRepoPassword}"\
-                ../../bamboo-deploy-publisher/deploy.sh\
-                adguarddns-cli-github
+            # Disable xtrace so the token isn't printed to the build log.
+            set +x
+            export GITHUB_TOKEN="${bamboo.githubPublicRepoPassword}"
+            set -x
+
+            ../../bamboo-deploy-publisher/deploy.sh adguarddns-cli-github
 # TODO(e.burkov):  Limit repositories when the Bamboo version will support such
 # configuration for triggers via YAML specs.
 #
