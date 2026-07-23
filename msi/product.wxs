@@ -287,24 +287,6 @@
     />
 
     <!--
-      Remove the installation directory from PATH on uninstall.
-    -->
-    <CustomAction
-        Id="RemoveFromPATH"
-        Impersonate="no"
-        Property="WINDIR"
-        ExeCommand="&quot;%WINDIR%\System32\WindowsPowerShell\v1.0\powershell.exe&quot; `
-            -NoProfile `
-            -Command &quot; `
-                $p = (gp 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment').PATH; `
-                $p = $p.Replace('[INSTALLDIR];', ''); `
-                sp 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment' PATH $p `
-            &quot;"
-        Execute="deferred"
-        Return="ignore"
-    />
-
-    <!--
       Define the actions order, see
       https://wixtoolset.org/docs/v3/xsd/wix/installexecutesequence and
       https://learn.microsoft.com/en-us/windows/win32/msi/suggested-installexecutesequence.
@@ -335,16 +317,9 @@
       >
       <Custom
           Action="DeleteConfiguration"
-          Before="RemoveFromPATH"
-        >
-        DELETE_CONFIGURATION AND REMOVE~="ALL"
-      </Custom
-      >
-      <Custom
-          Action="RemoveFromPATH"
           Before="UnpublishFeatures"
         >
-        REMOVE~="ALL"
+        DELETE_CONFIGURATION AND REMOVE~="ALL"
       </Custom
       >
       <Custom
