@@ -93,16 +93,7 @@
         Id="DELETE_CONFIGURATION"
         Value="0"
     />
-
-    <!--
-      Use a custom property for adding installation directory to PATH.
-      Default to "1" (enabled).
-    -->
-    <Property
-        Id="ADD_TO_PATH"
-        Value="1"
-    />
-
+    
     <!--
       Describe the installed resources layout, see
       https://wixtoolset.org/docs/v3/xsd/wix/directory.
@@ -142,19 +133,12 @@
                 DiskId="1"
                 Source="$(var.BuildDir)/LICENSE.txt"
             />
-          </Component
-          >
-          <Component
-              Id="PathComponent"
-              Guid="$(var.PathComponentGUID)"
-              Win64="$(var.ComponentWin64)"
-            >
             <Environment
                 Id="AddToPATH"
                 Name="PATH"
                 Value="[INSTALLDIR]"
                 Action="set"
-                Part="last"
+                Part="first"
                 System="yes"
                 Permanent="no"
             />
@@ -178,22 +162,6 @@
       <ComponentRef
           Id="MainExecutable"
       />
-      <Feature
-          Id="AddToPathFeature"
-          Title="Add To PATH"
-          Level="1"
-          Absent="allow"
-        >
-        <Condition
-            Level="1"
-          >
-          ADD_TO_PATH=1
-        </Condition>
-        <ComponentRef
-            Id="PathComponent"
-        />
-      </Feature
-      >
     </Feature
     >
 
@@ -299,24 +267,6 @@
     />
 
     <!--
-      Remove the installation directory from PATH on uninstall.
-    -->
-    <CustomAction
-        Id="RemoveFromPATH"
-        Impersonate="no"
-        Property="WINDIR"
-        ExeCommand="&quot;%WINDIR%\System32\WindowsPowerShell\v1.0\powershell.exe&quot; `
-            -NoProfile `
-            -Command &quot; `
-                $p = (gp 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment').PATH; `
-                $p = $p.Replace('[INSTALLDIR];', ''); `
-                sp 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment' PATH $p `
-            &quot;"
-        Execute="deferred"
-        Return="ignore"
-    />
-
-    <!--
       Define the actions order, see
       https://wixtoolset.org/docs/v3/xsd/wix/installexecutesequence and
       https://learn.microsoft.com/en-us/windows/win32/msi/suggested-installexecutesequence.
@@ -347,16 +297,9 @@
       >
       <Custom
           Action="DeleteConfiguration"
-          Before="RemoveFromPATH"
-        >
-        DELETE_CONFIGURATION AND REMOVE~="ALL"
-      </Custom
-      >
-      <Custom
-          Action="RemoveFromPATH"
           Before="UnpublishFeatures"
         >
-        REMOVE~="ALL"
+        DELETE_CONFIGURATION AND REMOVE~="ALL"
       </Custom
       >
       <Custom

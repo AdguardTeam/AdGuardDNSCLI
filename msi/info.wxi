@@ -19,8 +19,6 @@
   UpgradeCode="{40391C3E-440C-4792-A62F-5E3F93FE7C3C}" ?>
   <?define
   ExecutableGUID="{788DF3FB-2EC9-48FD-9F69-D6385B319BCA}" ?>
-  <?define
-  PathComponentGUID="{D18FB480-FD8B-46BE-B087-C2248A297EFF}" ?>
 
 
   <!--
@@ -95,7 +93,5 @@
   PrerequisitesUpdateText="Click Update to update [ProductName] from your computer. Click Back to review or change any of your installation settings. Click Cancel to exit the wizard." ?>
   <?define
   PrerequisitesDeleteConfigurationCheckBoxText="Delete [ProductName] configuration file." ?>
-  <?define
-  PrerequisitesAddToPathCheckBoxText="Add installation directory to PATH" ?>
 </Include
 >
