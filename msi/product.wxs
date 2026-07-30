@@ -93,7 +93,7 @@
         Id="DELETE_CONFIGURATION"
         Value="0"
     />
-    
+
     <!--
       Describe the installed resources layout, see
       https://wixtoolset.org/docs/v3/xsd/wix/directory.

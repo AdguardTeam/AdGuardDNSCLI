@@ -20,7 +20,6 @@
   <?define
   ExecutableGUID="{788DF3FB-2EC9-48FD-9F69-D6385B319BCA}" ?>
 
-
   <!--
     Use astrisk for automatic PackageCode picking, see
     https://documentation.help/Windows-Installer/windows_installer_best_practices.htm.
