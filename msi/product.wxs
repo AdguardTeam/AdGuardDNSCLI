@@ -149,7 +149,6 @@
               Guid="$(var.PathComponentGUID)"
               Win64="$(var.ComponentWin64)"
             >
-            <Condition>ADD_TO_PATH=1</Condition>
             <Environment
                 Id="AddToPATH"
                 Name="PATH"
@@ -179,9 +178,22 @@
       <ComponentRef
           Id="MainExecutable"
       />
-      <ComponentRef
-          Id="PathComponent"
-      />
+      <Feature
+          Id="AddToPathFeature"
+          Title="Add To PATH"
+          Level="1"
+          Absent="allow"
+        >
+        <Condition
+            Level="1"
+          >
+          ADD_TO_PATH=1
+        </Condition>
+        <ComponentRef
+            Id="PathComponent"
+        />
+      </Feature
+      >
     </Feature
     >
 
