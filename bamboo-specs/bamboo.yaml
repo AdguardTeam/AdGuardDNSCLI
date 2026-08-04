@@ -161,6 +161,7 @@
             set -x
 
             docker build \
+                --build-arg "APP_VERSION=$version" \
                 --build-arg "BASE_IMAGE=${bamboo_dockerGo}" \
                 --build-arg "BRANCH=${bamboo_planRepository_branchName}" \
                 --build-arg "CACHE_BUSTER=${bamboo_cacheBuster}" \
@@ -168,7 +169,6 @@
                 --build-arg "DEPLOY_SCRIPT_PATH=./deploy.sh" \
                 --build-arg "REVISION=${bamboo_repository_revision_number}" \
                 --build-arg "SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)" \
-                --build-arg "VERSION=$version" \
                 --output '.' \
                 --progress 'plain' \
                 --secret id=GPG_KEY_PASSPHRASE \
@@ -238,6 +238,7 @@
             set -x
 
             docker build \
+                --build-arg "APP_VERSION=$version" \
                 --build-arg "BASE_IMAGE=${bamboo_dockerGo}" \
                 --build-arg "BRANCH=${bamboo_planRepository_branchName}" \
                 --build-arg "CACHE_BUSTER=${bamboo_cacheBuster}" \
@@ -245,7 +246,6 @@
                 --build-arg "DEPLOY_SCRIPT_PATH=./deploy.sh" \
                 --build-arg "REVISION=${bamboo_repository_revision_number}" \
                 --build-arg "SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)" \
-                --build-arg "VERSION=$version" \
                 --output '.' \
                 --progress 'plain' \
                 --secret id=GPG_KEY_PASSPHRASE \

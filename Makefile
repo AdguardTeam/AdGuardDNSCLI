@@ -7,7 +7,7 @@
 # This comment is used to simplify checking local copies of the Makefile.  Bump
 # this number every time a significant change is made to this Makefile.
 #
-# AdGuard-Project-Version: 13
+# AdGuard-Project-Version: 18
 
 # Don't name these macros "GO" etc., because GNU Make apparently makes them
 # exported environment variables with the literal value of "${GO:-go}" and so
@@ -18,6 +18,7 @@
 GO.MACRO = $${GO:-go}
 VERBOSE.MACRO = $${VERBOSE:-0}
 
+APP_VERSION = v0.0.0
 BRANCH = $${BRANCH:-$$(git rev-parse --abbrev-ref HEAD)}
 CHANNEL = development
 DEPLOY_SCRIPT_PATH = not/a/real/path
@@ -33,11 +34,11 @@ RACE = 0
 REVISION = $${REVISION:-$$(git rev-parse --short HEAD)}
 SIGN = 1
 SIGNER_API_KEY = not-a-real-key
-VERSION = v0.0.0
 
 # TODO(f.setrakov): Remove the bin directory from the paths, as it is no longer
 # needed.
 ENV = env \
+	APP_VERSION="$(APP_VERSION)" \
 	BRANCH="$(BRANCH)" \
 	CHANNEL="$(CHANNEL)" \
 	DEPLOY_SCRIPT_PATH='$(DEPLOY_SCRIPT_PATH)'  \
@@ -56,7 +57,6 @@ ENV = env \
 	SIGN='$(SIGN)' \
 	SIGNER_API_KEY='$(SIGNER_API_KEY)'  \
 	VERBOSE="$(VERBOSE.MACRO)" \
-	VERSION="$(VERSION)" \
 
 # Keep the line above blank.
 
@@ -67,11 +67,11 @@ ENV_MISC = env \
 # Keep the line above blank.
 
 ENV_DOCKER = env \
+	APP_VERSION="$(APP_VERSION)" \
 	BRANCH="$(BRANCH)" \
 	REVISION="$(REVISION)" \
 	SUDO="$(SUDO)" \
 	VERBOSE="$(VERBOSE.MACRO)" \
-	VERSION="$(VERSION)" \
 
 # Keep the line above blank.
 
@@ -107,9 +107,9 @@ go-check: go-lint go-test
 # development of the project can be typechecked and built successfully.
 .PHONY: go-os-check
 go-os-check:
-	$(ENV) GOOS='darwin'  "$(GO.MACRO)" vet ./internal/...
-	$(ENV) GOOS='linux'   "$(GO.MACRO)" vet ./internal/...
-	$(ENV) GOOS='windows' "$(GO.MACRO)" vet ./internal/...
+	$(ENV) GOOS='darwin'  "$(GO.MACRO)" vet work
+	$(ENV) GOOS='linux'   "$(GO.MACRO)" vet work
+	$(ENV) GOOS='windows' "$(GO.MACRO)" vet work
 
 .PHONY: txt-lint
 txt-lint: ; $(ENV) "$(SHELL)" ./scripts/make/txt-lint.sh

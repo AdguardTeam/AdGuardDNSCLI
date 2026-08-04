@@ -33,7 +33,7 @@ revision="${REVISION:-}"
 source_date_epoch="${SOURCE_DATE_EPOCH:-}"
 sign="${SIGN:-0}"
 signer_api_key="${SIGNER_API_KEY:-}"
-version="${VERSION:-}"
+version="${APP_VERSION:-}"
 readonly \
 	branch \
 	channel \
@@ -61,7 +61,7 @@ while read -r os arch; do
 		SIGN="$sign" \
 		SIGNER_API_KEY="$signer_api_key" \
 		VERBOSE="$verbose" \
-		VERSION="$version" \
+		APP_VERSION="$version" \
 		build-release \
 		;
 done <<-'EOF'

@@ -48,7 +48,7 @@ readonly go
 # Set the build parameters unless already set.
 branch="${BRANCH:-$(git rev-parse --abbrev-ref HEAD)}"
 revision="${REVISION:-$(git rev-parse --short HEAD)}"
-version="${VERSION:-0}"
+version="${APP_VERSION:-0}"
 readonly branch revision version
 
 # Set date and time of the latest commit unless already set.

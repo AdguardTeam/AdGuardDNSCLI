@@ -166,6 +166,7 @@ COPY --from=tester "$TEST_REPORTS_DIR" "$TEST_REPORTS_DIR"
 # The qa-builder stage is used to build QA artifacts.  It imports GPG keys and
 # runs the build-qa target.  Real BRANCH and REVISION must be used here.
 FROM dependencies AS qa-builder
+ARG APP_VERSION=""
 ARG BRANCH=master
 ARG CACHE_BUSTER=0
 ARG CHANNEL=development
@@ -173,7 +174,6 @@ ARG DEPLOY_SCRIPT_PATH=not/a/real/path
 ARG REVISION=0000000000000000000000000000000000000000
 ARG SIGN=1
 ARG SOURCE_DATE_EPOCH=0
-ARG VERSION=""
 ADD . /app
 WORKDIR /app
 RUN \
@@ -191,6 +191,7 @@ if [ "${GPG_SECRET_KEY:-}" != '' ]; then
 fi
 
 make \
+	APP_VERSION="${APP_VERSION}" \
 	BRANCH="${BRANCH}" \
 	CHANNEL="${CHANNEL}" \
 	DEPLOY_SCRIPT_PATH="${DEPLOY_SCRIPT_PATH}" \
@@ -201,7 +202,6 @@ make \
 	SIGN="${SIGN}" \
 	SIGNER_API_KEY="${SIGNER_API_KEY}" \
 	VERBOSE=2 \
-	VERSION="${VERSION}" \
 	build-qa \
 	;
 EOF
@@ -215,6 +215,7 @@ COPY --from=qa-builder /app/dist /dist
 # The builder stage is used to build release artifacts.  It imports GPG keys and
 # runs the build-release target.  Real BRANCH and REVISION must be used here.
 FROM dependencies AS builder
+ARG APP_VERSION=""
 ARG BRANCH=master
 ARG CACHE_BUSTER=0
 ARG CHANNEL=development
@@ -222,7 +223,6 @@ ARG DEPLOY_SCRIPT_PATH=not/a/real/path
 ARG REVISION=0000000000000000000000000000000000000000
 ARG SIGN=1
 ARG SOURCE_DATE_EPOCH=0
-ARG VERSION=""
 ADD . /app
 WORKDIR /app
 RUN \
@@ -240,6 +240,7 @@ if [ "${GPG_SECRET_KEY:-}" != '' ]; then
 fi
 
 make \
+	APP_VERSION="${APP_VERSION}" \
 	BRANCH="${BRANCH}" \
 	CHANNEL="${CHANNEL}" \
 	DEPLOY_SCRIPT_PATH="${DEPLOY_SCRIPT_PATH}" \
@@ -250,7 +251,6 @@ make \
 	SIGN="${SIGN}" \
 	SIGNER_API_KEY="${SIGNER_API_KEY}" \
 	VERBOSE=2 \
-	VERSION="${VERSION}" \
 	build-release \
 	;
 EOF

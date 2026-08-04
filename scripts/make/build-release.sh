@@ -48,9 +48,9 @@ log 'starting to build AdGuard DNS CLI release'
 channel="${CHANNEL:?please set CHANNEL}"
 readonly channel
 
-# Check VERSION against the default value from the Makefile.  If it is that, use
-# the version calculation script.
-version="${VERSION:-}"
+# Check APP_VERSION against the default value from the Makefile.  If it is that,
+# use the version calculation script.
+version="${APP_VERSION:-}"
 if [ "$version" = 'v0.0.0' ] || [ "$version" = '' ]; then
 	version="$(sh ./scripts/make/version.sh)"
 fi
@@ -233,7 +233,7 @@ build() {
 	env GOARCH="$build_arch" \
 		GOOS="$os" \
 		VERBOSE="$((verbose - 1))" \
-		VERSION="$version" \
+		APP_VERSION="$version" \
 		OUT="$build_output" \
 		sh ./scripts/make/go-build.sh
 
