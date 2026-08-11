@@ -22,28 +22,24 @@ fi
 
 # Exit the script if a pipeline fails (-e), prevent accidental filename
 # expansion (-f), and consider undefined variables as errors (-u).
-set -e -f -u
+set -e -o 'pipefail' -f -u
 
 branch="${BRANCH:-}"
 channel="${CHANNEL:-}"
-deploy_script_path="${DEPLOY_SCRIPT_PATH:-}"
 gpg_key_passphrase="${GPG_KEY_PASSPHRASE:-}"
 parallelism="${PARALLELISM:-1}"
 revision="${REVISION:-}"
 source_date_epoch="${SOURCE_DATE_EPOCH:-}"
 sign="${SIGN:-0}"
-signer_api_key="${SIGNER_API_KEY:-}"
 version="${APP_VERSION:-}"
 readonly \
 	branch \
 	channel \
-	deploy_script_path \
 	gpg_key_passphrase \
 	parallelism \
 	revision \
 	source_date_epoch \
 	sign \
-	signer_api_key \
 	version \
 	;
 
@@ -52,14 +48,12 @@ while read -r os arch; do
 		"ARCH=$arch" \
 		BRANCH="$branch" \
 		CHANNEL="$channel" \
-		DEPLOY_SCRIPT_PATH="$deploy_script_path" \
 		GPG_KEY_PASSPHRASE="$gpg_key_passphrase" \
 		"OS=$os" \
 		PARALLELISM="$parallelism" \
 		REVISION="$revision" \
 		SOURCE_DATE_EPOCH="$source_date_epoch" \
 		SIGN="$sign" \
-		SIGNER_API_KEY="$signer_api_key" \
 		VERBOSE="$verbose" \
 		APP_VERSION="$version" \
 		build-release \

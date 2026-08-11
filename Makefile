@@ -21,7 +21,6 @@ VERBOSE.MACRO = $${VERBOSE:-0}
 APP_VERSION = v0.0.0
 BRANCH = $${BRANCH:-$$(git rev-parse --abbrev-ref HEAD)}
 CHANNEL = development
-DEPLOY_SCRIPT_PATH = not/a/real/path
 DIST_DIR = dist
 GOAMD64 = v1
 GOPROXY = https://proxy.golang.org|direct
@@ -33,7 +32,6 @@ MSI = 1
 RACE = 0
 REVISION = $${REVISION:-$$(git rev-parse --short HEAD)}
 SIGN = 1
-SIGNER_API_KEY = not-a-real-key
 
 # TODO(f.setrakov): Remove the bin directory from the paths, as it is no longer
 # needed.
@@ -41,7 +39,6 @@ ENV = env \
 	APP_VERSION="$(APP_VERSION)" \
 	BRANCH="$(BRANCH)" \
 	CHANNEL="$(CHANNEL)" \
-	DEPLOY_SCRIPT_PATH='$(DEPLOY_SCRIPT_PATH)'  \
 	DIST_DIR='$(DIST_DIR)' \
 	GO="$(GO.MACRO)" \
 	GOAMD64='$(GOAMD64)' \
@@ -55,7 +52,6 @@ ENV = env \
 	RACE='$(RACE)' \
 	REVISION="$(REVISION)" \
 	SIGN='$(SIGN)' \
-	SIGNER_API_KEY='$(SIGNER_API_KEY)'  \
 	VERBOSE="$(VERBOSE.MACRO)" \
 
 # Keep the line above blank.

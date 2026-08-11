@@ -107,7 +107,6 @@ readonly go
 	--lint \
 	./*.yaml \
 	./.github/*/*.yaml \
-	./bamboo-specs/*.yaml \
 	./internal/configmigrate/testdata/TestMigrator_Run_success/*/*.yaml \
 	;
 

@@ -25,9 +25,9 @@
 #    Docker daemon, which can invalidate the cache.
 #
 # 6. Add a CACHE_BUSTER argument to stages to be able to rerun the stages if
-#    needed.  Keep it in sync with bamboo-specs/bamboo.yaml.
+#    needed.  Keep it in sync with the files in .github/workflows/.
 
-# NOTE:  Keep in sync with bamboo-specs/bamboo.yaml.
+# NOTE:  Keep in sync with the files in .github/workflows/.
 ARG BASE_IMAGE=adguard/go-builder:1.26.5--1
 
 # The dependencies stage is needed to install packages and tool dependencies.
@@ -170,7 +170,6 @@ ARG APP_VERSION=""
 ARG BRANCH=master
 ARG CACHE_BUSTER=0
 ARG CHANNEL=development
-ARG DEPLOY_SCRIPT_PATH=not/a/real/path
 ARG REVISION=0000000000000000000000000000000000000000
 ARG SIGN=1
 ARG SOURCE_DATE_EPOCH=0
@@ -181,7 +180,6 @@ RUN \
 	--mount=type=cache,id=gopath,target=/go \
 	--mount=type=secret,id=GPG_KEY_PASSPHRASE,env=GPG_KEY_PASSPHRASE \
 	--mount=type=secret,id=GPG_SECRET_KEY,env=GPG_SECRET_KEY \
-	--mount=type=secret,id=SIGNER_API_KEY,env=SIGNER_API_KEY \
 <<-'EOF'
 set -e -f -o 'pipefail' -u -x
 
@@ -194,13 +192,11 @@ make \
 	APP_VERSION="${APP_VERSION}" \
 	BRANCH="${BRANCH}" \
 	CHANNEL="${CHANNEL}" \
-	DEPLOY_SCRIPT_PATH="${DEPLOY_SCRIPT_PATH}" \
 	GPG_KEY_PASSPHRASE="${GPG_KEY_PASSPHRASE}" \
 	PARALLELISM=1 \
 	REVISION="${REVISION}" \
 	SOURCE_DATE_EPOCH="$SOURCE_DATE_EPOCH" \
 	SIGN="${SIGN}" \
-	SIGNER_API_KEY="${SIGNER_API_KEY}" \
 	VERBOSE=2 \
 	build-qa \
 	;
@@ -210,7 +206,8 @@ EOF
 # they could be published.  This stage should only be used in a CI.
 FROM scratch AS qa-builder-exporter
 ARG CACHE_BUSTER=0
-COPY --from=qa-builder /app/dist /dist
+ARG DIST_DIR="dist"
+COPY --from=qa-builder /app/$DIST_DIR /$DIST_DIR
 
 # The builder stage is used to build release artifacts.  It imports GPG keys and
 # runs the build-release target.  Real BRANCH and REVISION must be used here.
@@ -219,7 +216,6 @@ ARG APP_VERSION=""
 ARG BRANCH=master
 ARG CACHE_BUSTER=0
 ARG CHANNEL=development
-ARG DEPLOY_SCRIPT_PATH=not/a/real/path
 ARG REVISION=0000000000000000000000000000000000000000
 ARG SIGN=1
 ARG SOURCE_DATE_EPOCH=0
@@ -230,7 +226,6 @@ RUN \
 	--mount=type=cache,id=gopath,target=/go \
 	--mount=type=secret,id=GPG_KEY_PASSPHRASE,env=GPG_KEY_PASSPHRASE \
 	--mount=type=secret,id=GPG_SECRET_KEY,env=GPG_SECRET_KEY \
-	--mount=type=secret,id=SIGNER_API_KEY,env=SIGNER_API_KEY \
 <<-'EOF'
 set -e -f -o 'pipefail' -u -x
 
@@ -243,13 +238,11 @@ make \
 	APP_VERSION="${APP_VERSION}" \
 	BRANCH="${BRANCH}" \
 	CHANNEL="${CHANNEL}" \
-	DEPLOY_SCRIPT_PATH="${DEPLOY_SCRIPT_PATH}" \
 	GPG_KEY_PASSPHRASE="${GPG_KEY_PASSPHRASE}" \
 	PARALLELISM=1 \
 	REVISION="${REVISION}" \
 	SOURCE_DATE_EPOCH="$SOURCE_DATE_EPOCH" \
 	SIGN="${SIGN}" \
-	SIGNER_API_KEY="${SIGNER_API_KEY}" \
 	VERBOSE=2 \
 	build-release \
 	;
@@ -260,3 +253,36 @@ EOF
 FROM scratch AS builder-exporter
 ARG CACHE_BUSTER=0
 COPY --from=builder /app/dist /dist
+
+# msi-builder stage is used to build MSI files.
+FROM dependencies AS msi-builder
+ARG APP_VERSION=""
+ARG CACHE_BUSTER=0
+ARG DIST_DIR="dist"
+ADD . /app
+WORKDIR /app
+RUN \
+	--mount=type=cache,id=gocache,target=/root/.cache/go-build \
+	--mount=type=cache,id=gopath,target=/go \
+<<-'EOF'
+set -e -f -o 'pipefail' -u -x
+
+for arch in '386' 'amd64' 'arm64'; do
+	dir="AdGuardDNSCLI_windows_${arch}"
+
+	env \
+		APP_VERSION="${APP_VERSION}" \
+		VERBOSE=1 \
+		sh ./scripts/make/build-msi.sh \
+		"$arch" \
+		"./${DIST_DIR}/${dir}.msi" \
+		"./${DIST_DIR}/${dir}/AdGuardDNSCLI"
+done
+EOF
+
+# msi-builder-exporter exports the build artifacts to the host machine so that
+# they could be published.  This stage should only be used in a CI.
+FROM scratch AS msi-builder-exporter
+ARG CACHE_BUSTER=0
+ARG DIST_DIR="dist"
+COPY --from=msi-builder /app/$DIST_DIR /$DIST_DIR

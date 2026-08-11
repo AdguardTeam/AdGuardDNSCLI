@@ -30,14 +30,14 @@ readonly msi
 
 # Exit the script if a pipeline fails (-e), prevent accidental filename
 # expansion (-f), and consider undefined variables as errors (-u).
-set -e -f -u
+set -e -o 'pipefail' -f -u
 
 # Function log is an echo wrapper that writes to stderr if the caller requested
 # verbosity level greater than 0.  Otherwise, it does nothing.
 log() {
 	if [ "$verbose" -gt '0' ]; then
 		# Don't use quotes to get word splitting.
-		echo "$1" 1>&2
+		printf '%s\n' "$1" 1>&2
 	fi
 }
 
@@ -81,15 +81,11 @@ readonly oses
 if [ "$sign" -eq '1' ]; then
 	gpg_key_passphrase="${GPG_KEY_PASSPHRASE:?please set GPG_KEY_PASSPHRASE or unset SIGN}"
 	gpg_key="${GPG_KEY:?please set GPG_KEY or unset SIGN}"
-	signer_api_key="${SIGNER_API_KEY:?please set SIGNER_API_KEY or unset SIGN}"
-	deploy_script_path="${DEPLOY_SCRIPT_PATH:?please set DEPLOY_SCRIPT_PATH or unset SIGN}"
 else
 	gpg_key_passphrase=''
 	gpg_key=''
-	signer_api_key=''
-	deploy_script_path=''
 fi
-readonly gpg_key_passphrase gpg_key signer_api_key deploy_script_path
+readonly gpg_key_passphrase gpg_key
 
 # The default distribution files directory is dist.
 dist="${DIST_DIR:-dist}"
@@ -97,24 +93,14 @@ readonly dist
 
 log "checking tools"
 
-# Make sure we fail gracefully if one of the tools we need is missing.  Use
-# alternatives when available.
-use_shasum='0'
-for tool in gpg gzip sed sha256sum tar zip; do
+# Make sure we fail gracefully if one of the tools we need is missing.
+for tool in gpg gzip sed tar zip; do
 	if ! command -v "$tool" >/dev/null; then
-		if [ "$tool" = 'sha256sum' ] && command -v 'shasum' >/dev/null; then
-			# macOS doesn't have sha256sum installed by default, but it does
-			# have shasum.
-			log 'replacing sha256sum with shasum -a 256'
-			use_shasum='1'
-		else
-			log "pieces don't fit, '$tool' not found"
+		log "pieces don't fit, '$tool' not found"
 
-			exit 1
-		fi
+		exit 1
 	fi
 done
-readonly use_shasum
 
 # Data section.  Arrange data into space-separated tables for read -r to read.
 # Use a hyphen for missing values.
@@ -149,64 +135,7 @@ sign() {
 			--detach-sig --passphrase "$gpg_key_passphrase" \
 			--pinentry-mode loopback -q "$sign_bin_path" \
 			;
-
-		return
 	fi
-
-	signed_bin_path="${sign_bin_path}.signed"
-
-	env INPUT_FILE="$sign_bin_path" \
-		OUTPUT_FILE="$signed_bin_path" \
-		SIGNER_API_KEY="$signer_api_key" \
-		"$deploy_script_path" sign-executable
-
-	mv "$signed_bin_path" "$sign_bin_path"
-}
-
-# Function build_msi creates and signs an MSI package for provided architecture.
-#
-# TODO(e.burkov):  Move to separate script file.
-build_msi() {
-	# Get the arguments.  Here and below, use the "msi_" prefix for all
-	# variables local to function build_msi.
-	msi_exe_arch="${1:?please set build architecture}"
-	msi_out="${2:?please set installer output}"
-	msi_dir="${3:?please set path to executable}"
-
-	case "$msi_exe_arch" in
-	'386')
-		msi_arch='x86'
-		;;
-	'amd64' | 'arm64')
-		# Use the value of 'x64' for ARM64 installer, since wixl only considers
-		# this option when specifying component's Win64 attribute value, which
-		# is 'yes' by default for ARM64 architecture.
-		#
-		# See https://wixtoolset.org/docs/v3/xsd/wix/component.
-		msi_arch='x64'
-		;;
-	*)
-		log "${msi_exe_arch} is not supported"
-
-		return 1
-		;;
-	esac
-
-	# TODO(e.burkov):  Configure another variables here.
-	msi_version="${version#v}"
-
-	wixl --ext "ui" \
-		-a "$msi_arch" \
-		-D "BuildDir=${msi_dir}" \
-		-D "ProductVersion=${msi_version}" \
-		-o "$msi_out" \
-		./msi/product.wxs ./msi/prerequisitesdlg.wxs ./msi/ui.wxs
-	msibuild "$msi_out" -a Binary.WixUI_Bmp_Dialog ./msi/bitmaps/dialogue.bmp
-	msibuild "$msi_out" -a Binary.WixUI_Bmp_Banner ./msi/bitmaps/banner.bmp
-
-	log "$msi_out"
-
-	sign 'windows' "$msi_out"
 }
 
 # Function build builds the release for one platform.  It builds a binary and an
@@ -230,7 +159,8 @@ build() {
 	mkdir -p "./${build_dir}"
 
 	# Build the binary.
-	env GOARCH="$build_arch" \
+	env \
+		GOARCH="$build_arch" \
 		GOOS="$os" \
 		VERBOSE="$((verbose - 1))" \
 		APP_VERSION="$version" \
@@ -260,7 +190,13 @@ build() {
 	'windows')
 		# TODO(e.burkov):  Consider building only MSI installers for Windows.
 		if [ "$msi" -eq 1 ]; then
-			build_msi "$build_arch" "./${dist}/${build_ar}.msi" "$build_dir"
+			env \
+				APP_VERSION="$version" \
+				VERBOSE="$verbose" \
+				sh ./scripts/make/build-msi.sh \
+				"$build_arch" \
+				"./${dist}/${build_ar}.msi" \
+				"$build_dir"
 		fi
 
 		build_archive="./${dist}/${build_ar}.zip"
@@ -324,38 +260,11 @@ done
 
 log "calculating checksums"
 
-# calculate_checksums uses the previously detected SHA-256 tool to calculate
-# checksums.  Do not use find with -exec, since shasum requires arguments.
-calculate_checksums() {
-	if [ "$use_shasum" -eq '0' ]; then
-		sha256sum "$@"
-	else
-		shasum -a 256 "$@"
-	fi
-}
-
-# Calculate the checksums of the files in a subshell with a different working
-# directory.  Don't use ls, because files matching one of the patterns may be
-# absent, which will make ls return with a non-zero status code.
-#
-# TODO(a.garipov): Consider calculating these as the build goes.
-(
-	set +f
-
-	cd "./${dist}"
-
-	: >./checksums.txt
-
-	for archive in ./*.zip ./*.tar.gz ./*.msi; do
-		# Make sure that we don't try to calculate a checksum for a glob pattern
-		# that matched no files.
-		if [ ! -f "$archive" ]; then
-			continue
-		fi
-
-		calculate_checksums "$archive" >>./checksums.txt
-	done
-)
+env \
+	DIST_DIR="$dist" \
+	VERBOSE="$verbose" \
+	sh ./scripts/make/calc-checksums.sh \
+	;
 
 log "writing versions"
 

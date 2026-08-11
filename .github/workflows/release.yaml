@@ -1,0 +1,190 @@
+'env':
+  'BASE_IMAGE': |-
+    ${{ vars.BASE_IMAGE || 'adguard/go-builder:1.26.5--1' }}
+  'DIST_DIR': |-
+    dist
+'jobs':
+  'BuildBinaries':
+    'if': |
+      ${{ github.repository_owner == 'AdGuardSoftwareLimited' }}
+    'permissions':
+      'contents': 'read'
+      'id-token': 'write'
+    'runs-on': 'team-go'
+    'steps':
+      - 'uses': 'actions/checkout@v6'
+        'with':
+          # Set to false to avoid GITHUB_TOKEN leaking.
+          #
+          # See https://github.com/actions/checkout/issues/485#issuecomment-934422611.
+          'persist-credentials': false
+      - 'name': 'Set source date epoch'
+        'run': echo "SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)" >> "$GITHUB_ENV"
+      - 'name': 'Retrieve GPG signing secrets'
+        'uses': 'hashicorp/vault-action@v4'
+        'with':
+          'url': ${{ vars.VAULT_URL }}
+          'method': 'jwt'
+          'role': 'gpg-signing'
+          'secrets': |
+            secret/data/ci-secrets/gpg-signing gpgPassword | GPG_PASSWORD ;
+            secret/data/ci-secrets/gpg-signing gpgSecretKey | GPG_SECRET_KEY ;
+      - 'name': 'Build'
+        'uses': 'AdGuardSoftwareLimited/actions/actions/docker-build@master'
+        'with':
+          'dockerfile': 'docker/ci.Dockerfile'
+          'context': '.'
+          'target': 'builder-exporter'
+          'output': '.'
+          'build-args': |
+            APP_VERSION=${{ github.ref_name }}
+            BASE_IMAGE=${{ env.BASE_IMAGE }}
+            BRANCH=${{ github.ref_name }}
+            CACHE_BUSTER=${{ inputs.cache_buster || '0' }}
+            CHANNEL=${{ case(
+              startsWith(github.ref_name, 'release-v'), 'release',
+              startsWith(github.ref_name, 'rc-v'), 'candidate',
+              'edge'
+            ) }}
+            DIST_DIR=${{ env.DIST_DIR }}
+            MSI=0
+            REVISION=${{ github.sha }}
+            SOURCE_DATE_EPOCH=${{ env.SOURCE_DATE_EPOCH }}
+          'secrets': |
+            GPG_KEY_PASSPHRASE=${{ env.GPG_PASSWORD }}
+            GPG_SECRET_KEY=${{ env.GPG_SECRET_KEY }}
+      - 'uses': 'actions/upload-artifact@v7'
+        'with':
+          'name': 'adguarddnscli'
+          'path': |
+            ${{ env.DIST_DIR }}
+  'SignWindowsEXE':
+    'name': 'Sign Windows executables'
+    'needs': 'BuildBinaries'
+    'if': |
+      ${{ github.repository_owner == 'AdGuardSoftwareLimited' }}
+    'permissions':
+      'contents': 'read'
+      'id-token': 'write'
+    'uses': 'AdGuardSoftwareLimited/actions/.github/workflows/sign-by-signer.yml@master'
+    'with':
+      'team': 'go'
+      'artifact-name': 'adguarddnscli'
+      'files': '**/**/*.exe'
+      'signed-artifact-name': 'adguarddnscli'
+  'BuildWindowsMSI':
+    'name': 'Build Windows MSI'
+    'needs': 'SignWindowsEXE'
+    'if': |
+      ${{ github.repository_owner == 'AdGuardSoftwareLimited' }}
+    'permissions':
+      'contents': 'read'
+    'runs-on': 'team-go'
+    'steps':
+      - 'uses': 'actions/checkout@v6'
+        'with':
+          # Set to false to avoid GITHUB_TOKEN leaking.
+          #
+          # See https://github.com/actions/checkout/issues/485#issuecomment-934422611.
+          'persist-credentials': false
+      - 'uses': 'actions/download-artifact@v8'
+        'with':
+          'name': 'adguarddnscli'
+          'path': |
+            ${{ env.DIST_DIR }}
+      - 'name': 'Build MSI'
+        'uses': 'AdGuardSoftwareLimited/actions/actions/docker-build@master'
+        'with':
+          'dockerfile': 'docker/ci.Dockerfile'
+          'context': '.'
+          'target': 'msi-builder-exporter'
+          'output': '.'
+          'build-args': |
+            APP_VERSION=${{ github.ref_name }}
+            CACHE_BUSTER=${{ inputs.cache_buster || '0' }}
+            DIST_DIR=${{ env.DIST_DIR }}
+      - 'uses': 'actions/upload-artifact@v7'
+        'with':
+          'name': 'adguarddnscli-msi'
+          'path': |
+            ${{ env.DIST_DIR }}
+  'SignWindowsMSI':
+    'name': 'Sign Windows MSI'
+    'needs': 'BuildWindowsMSI'
+    'if': |
+      ${{ github.repository_owner == 'AdGuardSoftwareLimited' }}
+    'permissions':
+      'contents': 'read'
+      'id-token': 'write'
+    'uses': 'AdGuardSoftwareLimited/actions/.github/workflows/sign-by-signer.yml@master'
+    'with':
+      'team': 'go'
+      'artifact-name': 'adguarddnscli-msi'
+      'files': '*.msi'
+      'signed-artifact-name': 'adguarddnscli-msi'
+  'CalculateChecksums':
+    'name': 'Calculate Checksums'
+    'needs': 'SignWindowsMSI'
+    'if': |
+      ${{ github.repository_owner == 'AdGuardSoftwareLimited' }}
+    'permissions':
+      'contents': 'read'
+    'runs-on': 'team-go'
+    'steps':
+      - 'uses': 'actions/checkout@v6'
+        'with':
+          # Set to false to avoid GITHUB_TOKEN leaking.
+          #
+          # See https://github.com/actions/checkout/issues/485#issuecomment-934422611.
+          'persist-credentials': false
+      - 'uses': 'actions/download-artifact@v8'
+        'with':
+          'name': 'adguarddnscli-msi'
+          'path': |
+            ${{ env.DIST_DIR }}
+      - 'name': 'Calculate Checksums'
+        'run': |
+          env \
+            DIST_DIR="${{ env.DIST_DIR }}" \
+            VERBOSE=1 \
+            sh ./scripts/make/calc-checksums.sh
+      - 'uses': 'actions/upload-artifact@v7'
+        'with':
+          'name': 'adguarddnscli-checksum'
+          'path': |
+            ${{ env.DIST_DIR }}
+  'PublishGitHubRelease':
+    'if': |
+      ${{
+        (github.ref_type == 'tag' || github.event_name == 'workflow_dispatch')
+        && github.repository_owner == 'AdGuardSoftwareLimited'
+      }}
+    'needs': 'CalculateChecksums'
+    'permissions':
+      # Download the artifact (release write goes via the Octopass token).
+      'contents': 'read'
+      # Octopass OIDC for the cross-repo token.
+      'id-token': 'write'
+    'uses': 'AdGuardSoftwareLimited/actions/.github/workflows/create-gh-release.yml@master'
+    'with':
+      'artifact_name': 'adguarddnscli-checksum'
+      'draft': true
+      'tag_name': ${{ github.ref_name }}
+      'team': 'go'
+      'target_repo': 'AdguardTeam/adguarddnscli'
+'name': 'Build and release artifacts'
+'on':
+  # TODO(d.kolyshev): Add push master, release-v, rc-v.
+  'workflow_dispatch':
+    'inputs':
+      'cache_buster':
+        'default': ''
+        'description': |
+          Override to force re-run of cached stages (pass any unique value).
+        'type': 'string'
+# Permissions are disabled for all the jobs by default, and then overridden for
+# specific jobs if needed.  This is a recommended practice for security reasons,
+# and also allows to avoid mistakes with permissions when creating new jobs.
+#
+# See https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#permissions.
+'permissions': {}

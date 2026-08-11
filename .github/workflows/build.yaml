@@ -1,81 +1,63 @@
-'name': 'build'
+'env':
+  'BASE_IMAGE': |-
+    ${{ vars.BASE_IMAGE || 'adguard/go-builder:1.26.5--1' }}
+  'DIST_DIR': |-
+    dist
+'jobs':
+  'BuildBinaries':
+    'if': |
+      ${{ github.repository_owner == 'AdGuardSoftwareLimited' }}
+    'permissions':
+      'contents': 'read'
+    'runs-on': 'team-go'
+    'steps':
+      - 'uses': 'actions/checkout@v6'
+        'with':
+          # Set to false to avoid GITHUB_TOKEN leaking.
+          #
+          # See https://github.com/actions/checkout/issues/485#issuecomment-934422611.
+          'persist-credentials': false
+      - 'name': 'Set source date epoch'
+        'run': |
+          echo "SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)" >> "$GITHUB_ENV"
+      - 'name': 'Build'
+        'uses': 'AdGuardSoftwareLimited/actions/actions/docker-build@master'
+        'with':
+          'dockerfile': 'docker/ci.Dockerfile'
+          'context': '.'
+          'target': 'qa-builder-exporter'
+          'output': '.'
+          'build-args': |
+            APP_VERSION=${{ github.ref_name }}
+            BASE_IMAGE=${{ env.BASE_IMAGE }}
+            BRANCH=${{ github.ref_name }}
+            CACHE_BUSTER=${{ inputs.cache_buster || '0' }}
+            CHANNEL="development"
+            DIST_DIR=${{ env.DIST_DIR }}
+            REVISION=${{ github.sha }}
+            SIGN=0
+            SOURCE_DATE_EPOCH=${{ env.SOURCE_DATE_EPOCH }}
+      - 'uses': 'actions/upload-artifact@v7'
+        'with':
+          'name': 'adguarddnscli'
+          'path': |
+            ${{ env.DIST_DIR }}
+          # TODO(d.kolyshev):  Sign QA builds.
+'name': 'Build QA Artifacts'
+'on':
+  'push':
+    'branches':
+      - '*'
+  'workflow_dispatch':
+    'inputs':
+      'cache_buster':
+        'default': ''
+        'description': |
+          Override to force re-run of cached stages (pass any unique value).
+        'type': 'string'
 # Permissions are disabled for all the jobs by default, and then overridden for
 # specific jobs if needed.  This is a recommended practice for security reasons,
 # and also allows to avoid mistakes with permissions when creating new jobs.
 #
 # See https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#permissions.
 'permissions': {}
-'env':
-  'GO_VERSION': '1.26.5'
-'on':
-  'push':
-    'branches':
-      - '*'
-    'tags':
-      - 'v*'
-  'pull_request':
-'jobs':
-  'test':
-    'permissions':
-      'contents': 'read'
-    'runs-on': '${{ matrix.os }}'
-    'env':
-      'GO111MODULE': 'on'
-      'TEST_AGDCSLOG': '1'
-    'strategy':
-      'fail-fast': false
-      'matrix':
-        'os':
-          - 'ubuntu-latest'
-          - 'macOS-latest'
-          - 'windows-latest'
-    'steps':
-      - 'name': 'Checkout'
-        'uses': 'actions/checkout@v6'
-        'with':
-          # Set to false to avoid  GITHUB_TOKEN leaking.
-          #
-          # See https://github.com/actions/checkout/issues/485#issuecomment-934422611.
-          'persist-credentials': false
-      - 'name': 'Set up Go'
-        'uses': 'actions/setup-go@v3'
-        'with':
-          'go-version': '${{ env.GO_VERSION }}'
-      - 'name': 'Set up Go modules cache'
-        'uses': 'actions/cache@v4'
-        'with':
-          'path': '~/go/pkg/mod'
-          'key': "${{ runner.os }}-go-${{ hashFiles('go.sum') }}"
-          'restore-keys': '${{ runner.os }}-go-'
-      - 'name': 'Run tests'
-        'shell': 'bash'
-        'run': 'make VERBOSE=1 go-deps go-test'
-  'build-release':
-    'permissions':
-      'contents': 'read'
-    'runs-on': 'ubuntu-latest'
-    'needs':
-      - 'test'
-    'steps':
-      - 'name': 'Checkout'
-        'uses': 'actions/checkout@v6'
-        'with':
-          # Set to false to avoid  GITHUB_TOKEN leaking.
-          #
-          # See https://github.com/actions/checkout/issues/485#issuecomment-934422611.
-          'persist-credentials': false
-      - 'name': 'Set up Go'
-        'uses': 'actions/setup-go@v3'
-        'with':
-          'go-version': '${{ env.GO_VERSION }}'
-      - 'name': 'Set up Go modules cache'
-        'uses': 'actions/cache@v4'
-        'with':
-          'path': '~/go/pkg/mod'
-          'key': "${{ runner.os }}-go-${{ hashFiles('go.sum') }}"
-          'restore-keys': '${{ runner.os }}-go-'
-      - 'name': 'Run snapshot build'
-        # Set a custom version string, since the checkout@v2 action does not seem
-        # to know about the master branch, while the version script uses it to
-        # count the number of commits within the branch.
-        'run': 'make APP_VERSION="v0.0.0-github" MSI=0 SIGN=0 VERBOSE=1 build-release'
