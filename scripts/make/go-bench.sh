@@ -1,6 +1,7 @@
 #!/bin/sh
 
-set -e -f -o 'pipefail' -u
+# TODO(a.garipov): Use set -o 'pipefail' when the image supports it.
+set -e -f -u
 
 verbose="${VERBOSE:-0}"
 readonly verbose
