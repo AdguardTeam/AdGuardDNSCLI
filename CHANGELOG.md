@@ -18,6 +18,8 @@ NOTE: Add new changes BELOW THIS COMMENT.
 
 ### Security
 
+- Go version has been updated to prevent the possibility of exploiting the Go vulnerabilities fixed in [1.26.6][go-1.26.6].
+
 - AdGuard DNS CLI is now more resistant to resource exhaustion attacks when using DNS-over-QUIC.
 
 ### Added
@@ -30,6 +32,8 @@ NOTE: Add new changes BELOW THIS COMMENT.
             enabled: true
             port: 6060
     ```
+
+[go-1.26.6]: https://groups.google.com/g/golang-announce/c/94pEornpRlI
 
 <!--
 NOTE: Add new changes ABOVE THIS COMMENT.
