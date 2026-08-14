@@ -30,6 +30,11 @@ type DNSService struct {
 	// addresses.
 	clientStorage client.Storage
 
+	// privateSubnets is a set of subnets that are considered private.  It is
+	// used to determine whether a client address is private or not.  It must
+	// not be nil.
+	privateSubnets netutil.SubnetSet
+
 	// clientGetter is used to get the client's address from the request's
 	// context.  It's only used for testing.
 	//
@@ -47,9 +52,10 @@ func New(conf *Config) (svc *DNSService, err error) {
 	}
 
 	svc = &DNSService{
-		logger:        conf.Logger,
-		clientGetter:  conf.ClientGetter,
-		clientStorage: conf.ClientStorage,
+		logger:         conf.Logger,
+		clientGetter:   conf.ClientGetter,
+		clientStorage:  conf.ClientStorage,
+		privateSubnets: conf.PrivateSubnets,
 	}
 	prxConf.RequestHandler = svc.Wrap(svc)
 
@@ -155,7 +161,7 @@ func (svc *DNSService) Wrap(h proxy.Handler) (wrapped proxy.Handler) {
 
 		// Check the address privateness because proxy does it before
 		// the substitution.  See TODO on [DNSService.clientGetter].
-		dctx.IsPrivateClient = svc.proxy.PrivateSubnets.Contains(dctx.Addr.Addr())
+		dctx.IsPrivateClient = svc.privateSubnets.Contains(dctx.Addr.Addr())
 
 		return h.ServeDNS(ctx, p, dctx)
 	}
