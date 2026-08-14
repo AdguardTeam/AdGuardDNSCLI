@@ -8,6 +8,8 @@ github.com/AdguardTeam/dnscrypt v0.0.2 h1:kIFCyjYofKHug7RwPGOjVga81P0/zOQdbUN+7p
 github.com/AdguardTeam/dnscrypt v0.0.2/go.mod h1:qCFs51rLfNzEDZqb6nz1tocVLnEearJ1zng6O3I6ecA=
 github.com/AdguardTeam/dnsproxy v0.83.1 h1:pSmKznrgtSP8ADJcRk3/fUmo5F+k+KwWWhmJudB781A=
 github.com/AdguardTeam/dnsproxy v0.83.1/go.mod h1:O1K8Roc6lNhSB5ffBXx34Pw7/03b+HUNh6qIhR/ad2A=
+github.com/AdguardTeam/dnsproxy v0.83.3-0.20260814083815-7fb8214d48da h1:VJNrAwduOTZ+ZQRH6JABykkIsQQAXMZ6AVNqzA6F9Ek=
+github.com/AdguardTeam/dnsproxy v0.83.3-0.20260814083815-7fb8214d48da/go.mod h1:O1K8Roc6lNhSB5ffBXx34Pw7/03b+HUNh6qIhR/ad2A=
 github.com/AdguardTeam/golibs v0.35.14 h1:LGqoRMbuxUgZyhOjlkmPxy5t1/XPuFpDcG5RBIDcskA=
 github.com/AdguardTeam/golibs v0.35.14/go.mod h1:FL470ALCuUs7cwk88ltBgTZ6JYCUG2NpNzp3EOMirxo=
 github.com/BurntSushi/toml v1.6.0 h1:dRaEfpa2VI55EwlIW72hMRHdWouJeRF7TPYhI+AUQjk=
@@ -20,6 +22,8 @@ github.com/anthropics/anthropic-sdk-go v1.57.0 h1:iEAcPbUKfJ2Iqz9uN/jEndCNW2+x7O
 github.com/anthropics/anthropic-sdk-go v1.57.0/go.mod h1:3EfIfmFqxH6rbiLcIP4tPFyXL/IHakx2wDG4OU+TIEI=
 github.com/bahlo/generic-list-go v0.2.0 h1:5sz/EEAK+ls5wF+NeqDpk5+iNdMDXrh3z3nPnH1Wvgk=
 github.com/bahlo/generic-list-go v0.2.0/go.mod h1:2KvAjgMlE5NNynlg/5iLrrCCZ2+5xWbdbCW3pNTGyYg=
+github.com/beefsack/go-rate v0.0.0-20220214233405-116f4ca011a0 h1:0b2vaepXIfMsG++IsjHiI2p4bxALD1Y2nQKGMR5zDQM=
+github.com/beefsack/go-rate v0.0.0-20220214233405-116f4ca011a0/go.mod h1:6YNgTHLutezwnBvyneBbwvB8C82y3dcoOj5EQJIdGXA=
 github.com/bluele/gcache v0.0.2 h1:WcbfdXICg7G/DGBh1PFfcirkWOQV+v077yF1pSy3DGw=
 github.com/bluele/gcache v0.0.2/go.mod h1:m15KV+ECjptwSPxKhOhQoAFQVtUFjTVkc3H8o0t/fp0=
 github.com/bmatcuk/doublestar/v4 v4.10.0 h1:zU9WiOla1YA122oLM6i4EXvGW62DvKZVxIe6TYWexEs=
