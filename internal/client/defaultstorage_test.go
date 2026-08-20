@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/AdguardTeam/AdGuardDNSCLI/internal/client"
+	"github.com/AdguardTeam/dnsproxy/dnsproxytest"
 	"github.com/AdguardTeam/dnsproxy/proxy"
 	"github.com/AdguardTeam/dnsproxy/upstream"
 	"github.com/AdguardTeam/golibs/errors"
@@ -401,10 +402,10 @@ func TestDefaultStorage_SetFinalizer(t *testing.T) {
 
 	closeCh := make(chan struct{})
 	onAddrToUps := func(addr string, _ *upstream.Options) (up upstream.Upstream, err error) {
-		return &testUpstream{
-			onAddress:  func() (addr string) { return "" },
-			onExchange: func(_ *dns.Msg) (resp *dns.Msg, err error) { return nil, nil },
-			onClose: func() (err error) {
+		return &dnsproxytest.Upstream{
+			OnAddress:  func() (addr string) { return "" },
+			OnExchange: func(_ *dns.Msg) (resp *dns.Msg, err error) { return nil, nil },
+			OnClose: func() (err error) {
 				_, _ = testutil.RequireReceive(testutil.NewPanicT(t), closeCh, localTestTimeout)
 
 				return nil

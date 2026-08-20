@@ -3,10 +3,12 @@ package client_test
 import (
 	"context"
 	"net/netip"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/AdguardTeam/AdGuardDNSCLI/internal/client"
+	"github.com/AdguardTeam/dnsproxy/dnsproxytest"
 	"github.com/AdguardTeam/dnsproxy/upstream"
 	"github.com/AdguardTeam/golibs/logutil/slogutil"
 	"github.com/AdguardTeam/golibs/testutil"
@@ -107,62 +109,37 @@ func (c *testUpstreamConstructor) AddressToUpstream(
 	return c.onAddressToUpstream(addr, opts)
 }
 
-type testUpstream struct {
-	onAddress  func() (addr string)
-	onClose    func() (err error)
-	onExchange func(req *dns.Msg) (resp *dns.Msg, err error)
-}
-
-// type check
-var _ upstream.Upstream = (*testUpstream)(nil)
-
-// Address implements the [upstream.Upstream] interface for *testUpstream.
-func (u *testUpstream) Address() (addr string) {
-	return u.onAddress()
-}
-
-// Exchange implements the [upstream.Upstream] interface for *testUpstream.
-func (u *testUpstream) Exchange(req *dns.Msg) (_ *dns.Msg, _ error) {
-	return u.onExchange(req)
-}
-
-// Close implements the [upstream.Upstream] interface for *testUpstream.
-func (u *testUpstream) Close() (err error) {
-	return u.onClose()
-}
-
-// comparableUpstream is a mock [upstream.Upstream] implementation for tests.
-type comparableUpstream struct {
-	opts *upstream.Options
-	addr string
-}
-
-// type check
-var _ upstream.Upstream = (*comparableUpstream)(nil)
-
-// Address implements the [upstream.Upstream] interface for *Upstream.
-func (u *comparableUpstream) Address() (addr string) {
-	return u.addr
-}
-
-// Exchange implements the [upstream.Upstream] interface for *Upstream.
-func (u *comparableUpstream) Exchange(req *dns.Msg) (_ *dns.Msg, _ error) {
-	panic(testutil.UnexpectedCall(req))
-}
-
-// Close implements the [upstream.Upstream] interface for *Upstream.
-func (u *comparableUpstream) Close() (err error) {
-	return nil
-}
-
 // newComparableUpstreamConstructor returns a new [UpstreamConstructor] that
-// creates upstreams comparable with [assert.Equal].
+// caches [dnsproxytest.Upstream] instances by address, making the returned
+// upstreams comparable with [assert.Equal] (same pointer for the same addr).
+// It is safe for concurrent use.
+//
+// TODO(m.kazantsev): Consider refactoring this and [runSearchesTests] test
+// helper to avoid using mutex for address synchronization.
 func newComparableUpstreamConstructor() (uc *testUpstreamConstructor) {
-	f := func(addr string, opts *upstream.Options) (u upstream.Upstream, err error) {
-		return &comparableUpstream{
-			opts: opts,
-			addr: addr,
-		}, nil
+	mu := &sync.Mutex{}
+	addr := ""
+
+	u := &dnsproxytest.Upstream{
+		OnAddress: func() (a string) {
+			mu.Lock()
+			defer mu.Unlock()
+
+			return addr
+		},
+		OnClose: func() (err error) { return nil },
+		OnExchange: func(req *dns.Msg) (resp *dns.Msg, err error) {
+			panic(testutil.UnexpectedCall(req))
+		},
+	}
+
+	f := func(a string, _ *upstream.Options) (ups upstream.Upstream, err error) {
+		mu.Lock()
+		defer mu.Unlock()
+
+		addr = a
+
+		return u, nil
 	}
 
 	return &testUpstreamConstructor{
