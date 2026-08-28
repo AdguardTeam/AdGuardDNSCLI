@@ -28,6 +28,7 @@ branch="${BRANCH:-}"
 channel="${CHANNEL:-}"
 gpg_key_passphrase="${GPG_KEY_PASSPHRASE:-}"
 parallelism="${PARALLELISM:-1}"
+msi="${MSI:-0}"
 revision="${REVISION:-}"
 source_date_epoch="${SOURCE_DATE_EPOCH:-}"
 sign="${SIGN:-0}"
@@ -37,6 +38,7 @@ readonly \
 	channel \
 	gpg_key_passphrase \
 	parallelism \
+	msi \
 	revision \
 	source_date_epoch \
 	sign \
@@ -49,6 +51,7 @@ while read -r os arch; do
 		BRANCH="$branch" \
 		CHANNEL="$channel" \
 		GPG_KEY_PASSPHRASE="$gpg_key_passphrase" \
+		MSI="$msi" \
 		"OS=$os" \
 		PARALLELISM="$parallelism" \
 		REVISION="$revision" \

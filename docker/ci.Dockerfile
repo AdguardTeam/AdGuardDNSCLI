@@ -3,7 +3,7 @@
 # This comment is used to simplify checking local copies of the Dockerfile.
 # Bump this number every time a significant change is made to this Dockerfile.
 #
-# AdGuard-Project-Version: 13
+# AdGuard-Project-Version: 14
 
 # Dockerfile guidelines:
 #
@@ -170,6 +170,7 @@ ARG APP_VERSION=""
 ARG BRANCH=master
 ARG CACHE_BUSTER=0
 ARG CHANNEL=development
+ARG MSI=1
 ARG REVISION=0000000000000000000000000000000000000000
 ARG SIGN=1
 ARG SOURCE_DATE_EPOCH=0
@@ -193,6 +194,7 @@ make \
 	BRANCH="${BRANCH}" \
 	CHANNEL="${CHANNEL}" \
 	GPG_KEY_PASSPHRASE="${GPG_KEY_PASSPHRASE}" \
+	MSI="${MSI}" \
 	PARALLELISM=1 \
 	REVISION="${REVISION}" \
 	SOURCE_DATE_EPOCH="$SOURCE_DATE_EPOCH" \
@@ -259,6 +261,7 @@ FROM dependencies AS msi-builder
 ARG APP_VERSION=""
 ARG CACHE_BUSTER=0
 ARG DIST_DIR="dist"
+ARG MSI_ARCHES="386 amd64 arm64"
 ADD . /app
 WORKDIR /app
 RUN \
@@ -267,8 +270,22 @@ RUN \
 <<-'EOF'
 set -e -f -o 'pipefail' -u -x
 
-for arch in '386' 'amd64' 'arm64'; do
+if [ -z "$MSI_ARCHES" ]; then
+    echo "MSI_ARCHES is not set, no MSI files will be built"
+
+	exit 1
+fi
+
+for arch in $MSI_ARCHES; do
 	dir="AdGuardDNSCLI_windows_${arch}"
+	build_dir="./${DIST_DIR}/${dir}/AdGuardDNSCLI"
+
+	# Fail loudly, since a missing directory indicates a build problem.
+	if [ ! -d "$build_dir" ]; then
+		echo "build directory for ${dir} not found"
+
+		exit 1
+	fi
 
 	env \
 		APP_VERSION="${APP_VERSION}" \
@@ -276,7 +293,7 @@ for arch in '386' 'amd64' 'arm64'; do
 		sh ./scripts/make/build-msi.sh \
 		"$arch" \
 		"./${DIST_DIR}/${dir}.msi" \
-		"./${DIST_DIR}/${dir}/AdGuardDNSCLI"
+		"$build_dir"
 done
 EOF
 
