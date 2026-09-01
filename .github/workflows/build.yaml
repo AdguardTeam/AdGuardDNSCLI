@@ -121,37 +121,6 @@
       'artifact-name': 'adguarddnscli-msi'
       'files': '*.msi'
       'signed-artifact-name': 'adguarddnscli-msi'
-  'CalculateChecksums':
-    'name': 'Calculate Checksums'
-    'needs': 'SignWindowsMSI'
-    'if': |
-      ${{ github.repository_owner == 'AdGuardSoftwareLimited' }}
-    'permissions':
-      'contents': 'read'
-    'runs-on': 'team-go'
-    'steps':
-      - 'uses': 'actions/checkout@v6'
-        'with':
-          # Set to false to avoid GITHUB_TOKEN leaking.
-          #
-          # See https://github.com/actions/checkout/issues/485#issuecomment-934422611.
-          'persist-credentials': false
-      - 'uses': 'actions/download-artifact@v8'
-        'with':
-          'name': 'adguarddnscli-msi'
-          'path': |
-            ${{ env.DIST_DIR }}
-      - 'name': 'Calculate Checksums'
-        'run': |
-          env \
-            DIST_DIR="${{ env.DIST_DIR }}" \
-            VERBOSE=1 \
-            sh ./scripts/make/calc-checksums.sh
-      - 'uses': 'actions/upload-artifact@v7'
-        'with':
-          'name': 'adguarddnscli-checksum'
-          'path': |
-            ${{ env.DIST_DIR }}
 'name': 'Build QA Artifacts'
 'on':
   'push':
