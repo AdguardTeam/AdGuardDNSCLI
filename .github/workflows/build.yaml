@@ -101,7 +101,7 @@
             APP_VERSION=${{ github.ref_name }}
             CACHE_BUSTER=${{ inputs.cache_buster || '0' }}
             DIST_DIR=${{ env.DIST_DIR }}
-            MSI_ARCHES="amd64"
+            MSI_ARCHES=amd64
       - 'uses': 'actions/upload-artifact@v7'
         'with':
           'name': 'adguarddnscli-msi'
