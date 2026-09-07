@@ -123,6 +123,9 @@
       'signed-artifact-name': 'adguarddnscli-msi'
 'name': 'Build QA Artifacts'
 'on':
+  'pull_request':
+    'branches':
+      - '*'
   'push':
     'branches':
       - '*'
