@@ -128,7 +128,7 @@
       - '*'
   'push':
     'branches':
-      - '*'
+      - 'master'
   'workflow_dispatch':
     'inputs':
       'cache_buster':
