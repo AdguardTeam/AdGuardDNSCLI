@@ -39,13 +39,13 @@
           'output': '.'
           'build-args': |
             APP_VERSION=${{ github.ref_name }}
-            ARCH='amd64 arm64'
+            ARCH=amd64 arm64
             BASE_IMAGE=${{ env.BASE_IMAGE }}
             BRANCH=${{ github.ref_name }}
             CACHE_BUSTER=${{ inputs.cache_buster || '0' }}
             CHANNEL="development"
             DIST_DIR=${{ env.DIST_DIR }}
-            OS='linux'
+            OS=darwin linux
             REVISION=${{ github.sha }}
             SIGN=1
             SOURCE_DATE_EPOCH=${{ env.SOURCE_DATE_EPOCH }}
@@ -61,13 +61,13 @@
           'output': '.'
           'build-args': |
             APP_VERSION=${{ github.ref_name }}
-            ARCH='amd64'
+            ARCH=amd64
             BASE_IMAGE=${{ env.BASE_IMAGE }}
             BRANCH=${{ github.ref_name }}
             CACHE_BUSTER=${{ inputs.cache_buster || '0' }}
             CHANNEL="development"
             DIST_DIR=${{ env.DIST_DIR }}
-            OS='windows'
+            OS=windows
             REVISION=${{ github.sha }}
             SIGN=0
             SOURCE_DATE_EPOCH=${{ env.SOURCE_DATE_EPOCH }}
