@@ -123,6 +123,7 @@
             CACHE_BUSTER=${{ inputs.cache_buster || '0' }}
             DIST_DIR=${{ env.DIST_DIR }}
             MSI=1
+            SIGN=0
       - 'uses': 'actions/upload-artifact@v7'
         'with':
           'name': 'adguarddnscli-qa-msi'
