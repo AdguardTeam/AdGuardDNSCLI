@@ -103,7 +103,7 @@ make go-test
 make go-build
 ```
 
-For building packages, you might need additional tools, such as GnuPG, MSI Tools (v0.103 and later), etc. See `./scripts/make/build-release.sh`.
+For building packages, you might need additional tools, such as GnuPG, MSI Tools (v0.103 and later), etc. See `./scripts/make/build-release.sh`, `./scripts/make/build-msi.sh`, and `./scripts/make/pack-release.sh`.
 
 ## <a href="#opts" id="opts" name="opts">Command-line options</a>
 

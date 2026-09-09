@@ -6,8 +6,8 @@
 # only has superficial knowledge of the POSIX shell language and alike.
 # Experienced readers may find it overly verbose.
 #
-# It calculates SHA-256 checksums for the archives in the distribution
-# directory and writes them into checksums.txt.
+# It calculates SHA-256 checksums for the archives in the distribution directory
+# and writes them into checksums.txt.
 
 # The default verbosity level is 0.  Show log messages if the caller requested
 # verbosity level greater than 0.  Show the environment and every command that

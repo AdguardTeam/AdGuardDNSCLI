@@ -28,7 +28,6 @@ GOTELEMETRY = off
 GOTOOLCHAIN = go1.26.8
 GPG_KEY = devteam@adguard.com
 GPG_KEY_PASSPHRASE = not-a-real-password
-MSI = 1
 RACE = 0
 REVISION = $${REVISION:-$$(git rev-parse --short HEAD)}
 SIGN = 1
@@ -110,9 +109,11 @@ go-os-check:
 .PHONY: txt-lint
 txt-lint: ; $(ENV) "$(SHELL)" ./scripts/make/txt-lint.sh
 
-.PHONY: build-qa build-release
+.PHONY: build-msi build-qa build-release pack-release
+build-msi:     ; $(ENV) "$(SHELL)" ./scripts/make/build-msi.sh
 build-qa:      ; $(ENV) "$(SHELL)" ./scripts/make/build-qa.sh
 build-release: ; $(ENV) "$(SHELL)" ./scripts/make/build-release.sh
+pack-release:  ; $(ENV) "$(SHELL)" ./scripts/make/pack-release.sh
 
 .PHONY: md-lint sh-lint
 md-lint: ; $(ENV_MISC) "$(SHELL)" ./scripts/make/md-lint.sh
