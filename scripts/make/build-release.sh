@@ -122,12 +122,12 @@ sign() {
 		return
 	fi
 
-	log "signing $sign_bin_path"
-
 	# Get the arguments.  Here and below, use the "sign_" prefix for all
 	# variables local to function sign.
 	sign_os="$1"
 	sign_bin_path="$2"
+
+	log "signing $sign_bin_path"
 
 	if [ "$sign_os" != 'windows' ]; then
 		gpg --default-key "$gpg_key" \
@@ -149,12 +149,12 @@ build() {
 
 	# Use the ".exe" filename extension if we build a Windows release.
 	if [ "$build_os" = 'windows' ]; then
-		build_output="./${build_dir}/adguarddns-cli.exe"
+		build_output="${build_dir}/adguarddns-cli.exe"
 	else
-		build_output="./${build_dir}/adguarddns-cli"
+		build_output="${build_dir}/adguarddns-cli"
 	fi
 
-	mkdir -p "./${build_dir}"
+	mkdir -p "${build_dir}"
 
 	# Prepare the build directory for archiving.
 	#
