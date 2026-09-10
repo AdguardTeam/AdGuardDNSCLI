@@ -152,6 +152,7 @@
             ARCH=amd64
             CACHE_BUSTER=${{ inputs.cache_buster || '0' }}
             DIST_DIR=${{ env.DIST_DIR }}
+            SOURCE_DATE_EPOCH=${{ env.SOURCE_DATE_EPOCH }}
       - 'name': 'Upload MSI installer'
         'uses': 'actions/upload-artifact@v7'
         'with':
@@ -210,6 +211,7 @@
             APP_VERSION=${{ github.ref_name }}
             CACHE_BUSTER=${{ inputs.cache_buster || '0' }}
             DIST_DIR=${{ env.DIST_DIR }}
+            SOURCE_DATE_EPOCH=${{ env.SOURCE_DATE_EPOCH }}
       - 'uses': 'actions/upload-artifact@v7'
         'with':
           'name': 'adguarddnscli-qa'
