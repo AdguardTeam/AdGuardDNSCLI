@@ -243,7 +243,7 @@ func (r *RDNSIDSource) sendDNSRequest(
 
 	// TODO(m.kazantsev):  Export the [proxy.UpstreamConfig] methods for
 	// choosing upstreams.
-	resp, ups, err := upstream.ExchangeParallel(r.ups.Upstreams, req)
+	resp, ups, err := upstream.ExchangeParallel(ctx, r.ups.Upstreams, req)
 	if err != nil {
 		l.ErrorContext(ctx, "sending ptr dns request", slogutil.KeyError, err)
 

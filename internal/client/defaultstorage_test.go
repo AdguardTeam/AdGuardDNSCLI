@@ -404,7 +404,7 @@ func TestDefaultStorage_SetFinalizer(t *testing.T) {
 	onAddrToUps := func(addr string, _ *upstream.Options) (up upstream.Upstream, err error) {
 		return &dnsproxytest.Upstream{
 			OnAddress:  func() (addr string) { return "" },
-			OnExchange: func(_ *dns.Msg) (resp *dns.Msg, err error) { return nil, nil },
+			OnExchange: func(_ context.Context, _ *dns.Msg) (resp *dns.Msg, err error) { return nil, nil },
 			OnClose: func() (err error) {
 				_, _ = testutil.RequireReceive(testutil.NewPanicT(t), closeCh, localTestTimeout)
 
