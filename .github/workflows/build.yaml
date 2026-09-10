@@ -30,7 +30,7 @@
           'secrets': |
             secret/data/ci-secrets/gpg-signing gpgPassword | GPG_PASSWORD ;
             secret/data/ci-secrets/gpg-signing gpgSecretKey | GPG_SECRET_KEY ;
-      - 'name': 'Build Unix'
+      - 'name': 'Build Darwin'
         'uses': 'AdGuardSoftwareLimited/actions/actions/docker-build@master'
         'with':
           'dockerfile': 'docker/ci.Dockerfile'
@@ -45,13 +45,41 @@
             CACHE_BUSTER=${{ inputs.cache_buster || '0' }}
             CHANNEL="development"
             DIST_DIR=${{ env.DIST_DIR }}
-            OS=darwin linux
+            OS=darwin
             REVISION=${{ github.sha }}
             SIGN=1
             SOURCE_DATE_EPOCH=${{ env.SOURCE_DATE_EPOCH }}
           'secrets': |
             GPG_KEY_PASSPHRASE=${{ env.GPG_PASSWORD }}
             GPG_SECRET_KEY=${{ env.GPG_SECRET_KEY }}
+      - 'name': 'Build Linux'
+        'uses': 'AdGuardSoftwareLimited/actions/actions/docker-build@master'
+        'with':
+          'dockerfile': 'docker/ci.Dockerfile'
+          'context': '.'
+          'target': 'builder-exporter'
+          'output': '.'
+          'build-args': |
+            APP_VERSION=${{ github.ref_name }}
+            ARCH=amd64
+            BASE_IMAGE=${{ env.BASE_IMAGE }}
+            BRANCH=${{ github.ref_name }}
+            CACHE_BUSTER=${{ inputs.cache_buster || '0' }}
+            CHANNEL="development"
+            DIST_DIR=${{ env.DIST_DIR }}
+            OS=linux
+            REVISION=${{ github.sha }}
+            SIGN=1
+            SOURCE_DATE_EPOCH=${{ env.SOURCE_DATE_EPOCH }}
+          'secrets': |
+            GPG_KEY_PASSPHRASE=${{ env.GPG_PASSWORD }}
+            GPG_SECRET_KEY=${{ env.GPG_SECRET_KEY }}
+      - 'name': 'Upload Unix releases'
+        'uses': 'actions/upload-artifact@v7'
+        'with':
+          'name': 'adguarddnscli-qa-unix'
+          'path': |
+            ${{ env.DIST_DIR }}/*
       - 'name': 'Build Windows'
         'uses': 'AdGuardSoftwareLimited/actions/actions/docker-build@master'
         'with':
@@ -71,11 +99,12 @@
             REVISION=${{ github.sha }}
             SIGN=0
             SOURCE_DATE_EPOCH=${{ env.SOURCE_DATE_EPOCH }}
-      - 'uses': 'actions/upload-artifact@v7'
+      - 'name': 'Upload Windows executables'
+        'uses': 'actions/upload-artifact@v7'
         'with':
-          'name': 'adguarddnscli-qa-windows-build'
+          'name': 'adguarddnscli-qa-windows'
           'path': |
-            ${{ env.DIST_DIR }}/*/AdGuardDNSCLI/*.exe
+            ${{ env.DIST_DIR }}/AdGuardDNSCLI_windows_amd64
   'SignWindowsEXE':
     'name': 'Sign Windows executables'
     'needs': 'BuildBinaries'
@@ -87,9 +116,9 @@
     'uses': 'AdGuardSoftwareLimited/actions/.github/workflows/sign-by-signer.yml@master'
     'with':
       'team': 'go'
-      'artifact-name': 'adguarddnscli-qa-windows-build'
-      'files': '**/**/*.exe'
-      'signed-artifact-name': 'adguarddnscli-qa-windows-build'
+      'artifact-name': 'adguarddnscli-qa-windows'
+      'files': 'AdGuardDNSCLI_windows_amd64/AdGuardDNSCLI/adguarddns-cli.exe'
+      'signed-artifact-name': 'adguarddnscli-qa-windows'
   'BuildWindowsMSI':
     'name': 'Build Windows MSI'
     'needs': 'SignWindowsEXE'
@@ -105,12 +134,13 @@
           #
           # See https://github.com/actions/checkout/issues/485#issuecomment-934422611.
           'persist-credentials': false
-      - 'uses': 'actions/download-artifact@v8'
+      - 'name': 'Download signed Windows executables'
+        'uses': 'actions/download-artifact@v8'
         'with':
-          'name': 'adguarddnscli-qa-windows-build'
+          'name': 'adguarddnscli-qa-windows'
           'path': |
             ${{ env.DIST_DIR }}
-      - 'name': 'Build MSI'
+      - 'name': 'Build MSI installer'
         'uses': 'AdGuardSoftwareLimited/actions/actions/docker-build@master'
         'with':
           'dockerfile': 'docker/ci.Dockerfile'
@@ -122,13 +152,12 @@
             ARCH=amd64
             CACHE_BUSTER=${{ inputs.cache_buster || '0' }}
             DIST_DIR=${{ env.DIST_DIR }}
-            MSI=1
-            SIGN=0
-      - 'uses': 'actions/upload-artifact@v7'
+      - 'name': 'Upload MSI installer'
+        'uses': 'actions/upload-artifact@v7'
         'with':
           'name': 'adguarddnscli-qa-msi'
           'path': |
-            ${{ env.DIST_DIR }}/*.msi
+            ${{ env.DIST_DIR }}/AdGuardDNSCLI_windows_amd64.msi
   'SignWindowsMSI':
     'name': 'Sign Windows MSI'
     'needs': 'BuildWindowsMSI'
@@ -141,7 +170,7 @@
     'with':
       'team': 'go'
       'artifact-name': 'adguarddnscli-qa-msi'
-      'files': '*.msi'
+      'files': 'AdGuardDNSCLI_windows_amd64.msi'
       'signed-artifact-name': 'adguarddnscli-qa-msi'
   'PackArtifacts':
     'name': 'Pack artifacts'
@@ -158,7 +187,14 @@
           #
           # See https://github.com/actions/checkout/issues/485#issuecomment-934422611.
           'persist-credentials': false
-      - 'uses': 'actions/download-artifact@v8'
+      - 'name': 'Download Unix Artifacts'
+        'uses': 'actions/download-artifact@v8'
+        'with':
+          'name': 'adguarddnscli-qa-unix'
+          'path': |
+            ${{ env.DIST_DIR }}
+      - 'name': 'Download MSI Artifact'
+        'uses': 'actions/download-artifact@v8'
         'with':
           'name': 'adguarddnscli-qa-msi'
           'path': |
@@ -174,7 +210,6 @@
             APP_VERSION=${{ github.ref_name }}
             CACHE_BUSTER=${{ inputs.cache_buster || '0' }}
             DIST_DIR=${{ env.DIST_DIR }}
-            SIGN=0
       - 'uses': 'actions/upload-artifact@v7'
         'with':
           'name': 'adguarddnscli-qa'

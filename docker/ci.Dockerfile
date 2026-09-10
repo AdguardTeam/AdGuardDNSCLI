@@ -218,12 +218,11 @@ ARG DIST_DIR="dist"
 COPY --from=builder /app/$DIST_DIR /$DIST_DIR
 
 # msi-builder stage is used to build MSI installers.
-FROM builder AS msi-builder
+FROM dependencies AS msi-builder
 ARG ARCH=""
 ARG APP_VERSION=""
 ARG CACHE_BUSTER=0
 ARG DIST_DIR="dist"
-ARG MSI=1
 ADD . /app
 WORKDIR /app
 RUN \
@@ -231,10 +230,6 @@ RUN \
 	--mount=type=cache,id=gopath,target=/go \
 <<-'EOF'
 set -e -f -o 'pipefail' -u -x
-
-if [ "${MSI:-0}" != '1' ]; then
-    exit 0
-fi
 
 make \
 	APP_VERSION="${APP_VERSION}" \
@@ -256,7 +251,7 @@ COPY --from=msi-builder /app/$DIST_DIR /$DIST_DIR
 #
 # Use fake BRANCH and REVISION values to both prevent git calls and also not
 # ruin the caching with ARGs.
-FROM msi-builder AS packer
+FROM dependencies AS packer
 ARG ARCH=""
 ARG APP_VERSION=""
 ARG BRANCH=master
