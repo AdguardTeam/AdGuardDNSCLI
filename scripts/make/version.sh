@@ -27,6 +27,8 @@ readonly channel
 head="${HEAD:-$(git rev-parse --short HEAD)}"
 readonly head
 
+git rev-list --count master
+
 case "$channel" in
 'development')
 	# commit_number is the number of current commit within the branch.
