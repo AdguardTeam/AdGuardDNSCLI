@@ -24,10 +24,13 @@ set -e -f -u
 channel="${CHANNEL:?please set CHANNEL}"
 readonly channel
 
+head="${HEAD:-$(git rev-parse --short HEAD)}"
+readonly head
+
 case "$channel" in
 'development')
 	# commit_number is the number of current commit within the branch.
-	commit_number="$(git rev-list --count master..HEAD --)"
+	commit_number="$(git rev-list --count master.."${head}" --)"
 	readonly commit_number
 
 	# The development builds are described with a combination of unset semantic
@@ -35,7 +38,7 @@ case "$channel" in
 	#
 	#   v0.0.0-dev.5-a1b2c3d4
 	#
-	version="v0.0.0-dev.${commit_number}+$(git rev-parse --short HEAD)"
+	version="v0.0.0-dev.${commit_number}+${head}"
 	;;
 'release')
 	# current_desc is the description of the current git commit.  If the
@@ -61,7 +64,7 @@ case "$channel" in
 	# candidate builds.
 
 	# current_branch is the name of the branch currently checked out.
-	current_branch="$(git rev-parse --abbrev-ref HEAD)"
+	current_branch="$(git rev-parse --abbrev-ref "${head}")"
 	readonly current_branch
 
 	# The branch should be named like:
@@ -74,7 +77,10 @@ case "$channel" in
 		exit 1
 	fi
 
-	version="${current_branch#rc-}-rc.$(git rev-list --count "master"..HEAD)"
+	commit_number="$(git rev-list --count master.."${head}" --)"
+	readonly commit_number
+
+	version="${current_branch#rc-}-rc.${commit_number}"
 	;;
 *)
 	echo "invalid channel '$channel', supported values are \
