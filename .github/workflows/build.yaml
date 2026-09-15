@@ -34,7 +34,7 @@
       - 'name': 'Set app version'
         'id': 'app_version'
         'run': |
-          app_version="$(env VERBOSE=2 CHANNEL=${{ env.CHANNEL }} HEAD=${{ github.event.pull_request.head.sha }} sh ./scripts/make/version.sh)"
+          app_version="$(env CHANNEL=${{ env.CHANNEL }} sh ./scripts/make/version.sh)"
           readonly app_version
 
           echo "APP_VERSION=${app_version}" >> "$GITHUB_ENV"
