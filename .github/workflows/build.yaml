@@ -26,13 +26,15 @@
           #
           # See https://github.com/actions/checkout/issues/485#issuecomment-934422611.
           'persist-credentials': false
+          # Fetch all branches and tags to make the version script work.
+          'fetch-depth': 0
       - 'name': 'Set source date epoch'
         'run': |
           echo "SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)" >> "$GITHUB_ENV"
       - 'name': 'Set app version'
         'id': 'app_version'
         'run': |
-          app_version="$(env CHANNEL=${{ env.CHANNEL }} HEAD=${{ github.event.pull_request.head.ref }} sh ./scripts/make/version.sh)"
+          app_version="$(env CHANNEL=${{ env.CHANNEL }} sh ./scripts/make/version.sh)"
           readonly app_version
 
           echo "APP_VERSION=${app_version}" >> "$GITHUB_ENV"
