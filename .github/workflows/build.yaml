@@ -1,12 +1,20 @@
 'env':
   'BASE_IMAGE': |-
     ${{ vars.BASE_IMAGE || 'adguard/go-builder:1.26.8--1' }}
+  'CHANNEL': |-
+    ${{ case(
+      startsWith(github.ref_name, 'release-v'), 'release',
+      startsWith(github.ref_name, 'rc-v'), 'candidate',
+      'edge'
+    ) }}
   'DIST_DIR': |-
     dist
 'jobs':
   'BuildBinaries':
     'if': |
       ${{ github.repository_owner == 'AdGuardSoftwareLimited' }}
+    'outputs':
+      'app_version': ${{ steps.app_version.outputs.app_version }}
     'permissions':
       'contents': 'read'
       'id-token': 'write'
@@ -21,6 +29,17 @@
       - 'name': 'Set source date epoch'
         'run': |
           echo "SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)" >> "$GITHUB_ENV"
+      - 'name': 'Set app version'
+        'id': 'app_version'
+        'run': |
+          app_version="$(env CHANNEL=${{ env.CHANNEL }} sh ./scripts/make/version.sh)"
+          readonly app_version
+
+          echo "APP_VERSION=${app_version}" >> "$GITHUB_ENV"
+
+          # Also expose the version as a job output, since the env context is
+          # not available to the other jobs.
+          echo "app_version=${app_version}" >> "$GITHUB_OUTPUT"
       - 'name': 'Retrieve GPG signing secrets'
         'uses': 'hashicorp/vault-action@v4'
         'with':
@@ -38,7 +57,6 @@
           'target': 'builder-exporter'
           'output': '.'
           'build-args': |
-            APP_VERSION=${{ github.ref_name }}
             ARCH=amd64 arm64
             BASE_IMAGE=${{ env.BASE_IMAGE }}
             BRANCH=${{ github.ref_name }}
@@ -60,7 +78,6 @@
           'target': 'builder-exporter'
           'output': '.'
           'build-args': |
-            APP_VERSION=${{ github.ref_name }}
             ARCH=amd64
             BASE_IMAGE=${{ env.BASE_IMAGE }}
             BRANCH=${{ github.ref_name }}
@@ -88,7 +105,6 @@
           'target': 'builder-exporter'
           'output': '.'
           'build-args': |
-            APP_VERSION=${{ github.ref_name }}
             ARCH=amd64
             BASE_IMAGE=${{ env.BASE_IMAGE }}
             BRANCH=${{ github.ref_name }}
@@ -148,7 +164,6 @@
           'target': 'msi-builder-exporter'
           'output': '.'
           'build-args': |
-            APP_VERSION=${{ github.ref_name }}
             ARCH=amd64
             CACHE_BUSTER=${{ inputs.cache_buster || '0' }}
             DIST_DIR=${{ env.DIST_DIR }}
@@ -208,7 +223,6 @@
           'target': 'packer-exporter'
           'output': '.'
           'build-args': |
-            APP_VERSION=${{ github.ref_name }}
             CACHE_BUSTER=${{ inputs.cache_buster || '0' }}
             DIST_DIR=${{ env.DIST_DIR }}
             SOURCE_DATE_EPOCH=${{ env.SOURCE_DATE_EPOCH }}
