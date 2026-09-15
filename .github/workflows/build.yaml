@@ -15,6 +15,7 @@
       ${{ github.repository_owner == 'AdGuardSoftwareLimited' }}
     'outputs':
       'app_version': ${{ steps.app_version.outputs.app_version }}
+      'source_date_epoch': ${{ steps.source_date_epoch.outputs.source_date_epoch }}
     'permissions':
       'contents': 'read'
       'id-token': 'write'
@@ -22,15 +23,23 @@
     'steps':
       - 'uses': 'actions/checkout@v6'
         'with':
+          # Fetch all branches and tags to make the version script work.
+          'fetch-depth': 0
           # Set to false to avoid GITHUB_TOKEN leaking.
           #
           # See https://github.com/actions/checkout/issues/485#issuecomment-934422611.
           'persist-credentials': false
-          # Fetch all branches and tags to make the version script work.
-          'fetch-depth': 0
       - 'name': 'Set source date epoch'
+        'id': 'source_date_epoch'
         'run': |
-          echo "SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)" >> "$GITHUB_ENV"
+          source_date_epoch=$(git log -1 --format=%ct)
+          readonly source_date_epoch
+
+          echo "SOURCE_DATE_EPOCH=${source_date_epoch}" >> "$GITHUB_ENV"
+
+          # Also expose the source date epoch as a job output, since the env
+          # context is not available to the other jobs.
+          echo "source_date_epoch=${source_date_epoch}" >> "$GITHUB_OUTPUT"
       - 'name': 'Set app version'
         'id': 'app_version'
         'run': |
@@ -59,6 +68,7 @@
           'target': 'builder-exporter'
           'output': '.'
           'build-args': |
+            APP_VERSION=${{ env.APP_VERSION }}
             ARCH=amd64 arm64
             BASE_IMAGE=${{ env.BASE_IMAGE }}
             BRANCH=${{ github.ref_name }}
@@ -80,6 +90,7 @@
           'target': 'builder-exporter'
           'output': '.'
           'build-args': |
+            APP_VERSION=${{ env.APP_VERSION }}
             ARCH=amd64
             BASE_IMAGE=${{ env.BASE_IMAGE }}
             BRANCH=${{ github.ref_name }}
@@ -107,6 +118,7 @@
           'target': 'builder-exporter'
           'output': '.'
           'build-args': |
+            APP_VERSION=${{ env.APP_VERSION }}
             ARCH=amd64
             BASE_IMAGE=${{ env.BASE_IMAGE }}
             BRANCH=${{ github.ref_name }}
@@ -139,7 +151,9 @@
       'signed-artifact-name': 'adguarddnscli-qa-windows'
   'BuildWindowsMSI':
     'name': 'Build Windows MSI'
-    'needs': 'SignWindowsEXE'
+    'needs':
+      - 'BuildBinaries'
+      - 'SignWindowsEXE'
     'if': |
       ${{ github.repository_owner == 'AdGuardSoftwareLimited' }}
     'permissions':
@@ -159,6 +173,8 @@
           'path': |
             ${{ env.DIST_DIR }}/AdGuardDNSCLI_windows_amd64
       - 'name': 'Build MSI installer'
+        'env':
+          'SOURCE_DATE_EPOCH': ${{ needs.BuildBinaries.outputs.source_date_epoch }}
         'uses': 'AdGuardSoftwareLimited/actions/actions/docker-build@master'
         'with':
           'dockerfile': 'docker/ci.Dockerfile'
@@ -192,7 +208,9 @@
       'signed-artifact-name': 'adguarddnscli-qa-msi'
   'PackArtifacts':
     'name': 'Pack artifacts'
-    'needs': 'SignWindowsMSI'
+    'needs':
+      - 'BuildBinaries'
+      - 'SignWindowsMSI'
     'if': |
       ${{ github.repository_owner == 'AdGuardSoftwareLimited' }}
     'permissions':
@@ -218,6 +236,9 @@
           'path': |
             ${{ env.DIST_DIR }}
       - 'name': 'Pack'
+        'env':
+          'APP_VERSION': ${{needs.BuildBinaries.outputs.app_version}}
+          'SOURCE_DATE_EPOCH': ${{ needs.BuildBinaries.outputs.source_date_epoch }}
         'uses': 'AdGuardSoftwareLimited/actions/actions/docker-build@master'
         'with':
           'dockerfile': 'docker/ci.Dockerfile'
@@ -225,6 +246,7 @@
           'target': 'packer-exporter'
           'output': '.'
           'build-args': |
+            APP_VERSION=${{ env.APP_VERSION }}
             CACHE_BUSTER=${{ inputs.cache_buster || '0' }}
             DIST_DIR=${{ env.DIST_DIR }}
             SOURCE_DATE_EPOCH=${{ env.SOURCE_DATE_EPOCH }}
