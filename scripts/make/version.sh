@@ -78,7 +78,7 @@ case "$channel" in
 	;;
 *)
 	echo "invalid channel '$channel', supported values are \
-		'development', 'edge', 'release' and 'candidate'" 1>&2
+		'development', 'release' and 'candidate'" 1>&2
 	exit 1
 	;;
 esac

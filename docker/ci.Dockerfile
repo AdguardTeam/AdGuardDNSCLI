@@ -215,7 +215,7 @@ EOF
 FROM scratch AS builder-exporter
 ARG CACHE_BUSTER=0
 ARG DIST_DIR="dist"
-COPY --from=builder /app/$DIST_DIR /$DIST_DIR
+COPY --from=builder /app/${DIST_DIR} /${DIST_DIR}
 
 # msi-builder stage is used to build MSI installers.
 FROM dependencies AS msi-builder
@@ -246,12 +246,15 @@ EOF
 FROM scratch AS msi-builder-exporter
 ARG CACHE_BUSTER=0
 ARG DIST_DIR="dist"
-COPY --from=msi-builder /app/$DIST_DIR /$DIST_DIR
+COPY --from=msi-builder /app/${DIST_DIR} /${DIST_DIR}
 
 # The packer stage is used to pack the built and signed artifacts into archives.
 #
 # Use fake BRANCH and REVISION values to both prevent git calls and also not
-# ruin the caching with ARGs.
+# ruin the caching with ARGs.  ARCH, OS, and SOURCE_DATE_EPOCH are not passed to
+# pack-release, but they are declared here on purpose: they define the artifacts
+# produced by the build stages, so changing them must invalidate this stage's
+# cache as well.
 FROM dependencies AS packer
 ARG ARCH=""
 ARG APP_VERSION=""
@@ -281,4 +284,4 @@ EOF
 FROM scratch AS packer-exporter
 ARG CACHE_BUSTER=0
 ARG DIST_DIR="dist"
-COPY --from=packer /app/$DIST_DIR /$DIST_DIR
+COPY --from=packer /app/${DIST_DIR} /${DIST_DIR}

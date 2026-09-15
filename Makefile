@@ -109,9 +109,8 @@ go-os-check:
 .PHONY: txt-lint
 txt-lint: ; $(ENV) "$(SHELL)" ./scripts/make/txt-lint.sh
 
-.PHONY: build-msi build-qa build-release pack-release
+.PHONY: build-msi build-release pack-release
 build-msi:     ; $(ENV) "$(SHELL)" ./scripts/make/build-msi.sh
-build-qa:      ; $(ENV) "$(SHELL)" ./scripts/make/build-qa.sh
 build-release: ; $(ENV) "$(SHELL)" ./scripts/make/build-release.sh
 pack-release:  ; $(ENV) "$(SHELL)" ./scripts/make/pack-release.sh
 

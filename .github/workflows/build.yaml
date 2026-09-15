@@ -5,7 +5,7 @@
     ${{ case(
       startsWith(github.ref_name, 'release-v'), 'release',
       startsWith(github.ref_name, 'rc-v'), 'candidate',
-      'edge'
+      'development'
     ) }}
   'DIST_DIR': |-
     dist
@@ -61,7 +61,7 @@
             BASE_IMAGE=${{ env.BASE_IMAGE }}
             BRANCH=${{ github.ref_name }}
             CACHE_BUSTER=${{ inputs.cache_buster || '0' }}
-            CHANNEL="development"
+            CHANNEL="${{ env.CHANNEL }}"
             DIST_DIR=${{ env.DIST_DIR }}
             OS=darwin
             REVISION=${{ github.sha }}
@@ -82,7 +82,7 @@
             BASE_IMAGE=${{ env.BASE_IMAGE }}
             BRANCH=${{ github.ref_name }}
             CACHE_BUSTER=${{ inputs.cache_buster || '0' }}
-            CHANNEL="development"
+            CHANNEL="${{ env.CHANNEL }}"
             DIST_DIR=${{ env.DIST_DIR }}
             OS=linux
             REVISION=${{ github.sha }}
