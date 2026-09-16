@@ -70,13 +70,18 @@ calculate_checksums() {
 	fi
 }
 
+metadir="${dist}/metadata"
+mkdir -p "$metadir"
+
 # Calculate the checksums of the files in a subshell with a different working
 # directory.  Don't use ls, because files matching one of the patterns may be
 # absent, which will make ls return with a non-zero status code.
 (
 	cd "./${dist}"
 
-	: >./checksums.txt
+	cksum_file="./metadata/checksums.txt"
+
+	: >"$cksum_file"
 
 	for archive in ./*.zip ./*.tar.gz ./*.msi; do
 		# Make sure that we don't try to calculate a checksum for a glob pattern
@@ -85,7 +90,7 @@ calculate_checksums() {
 			continue
 		fi
 
-		calculate_checksums "$archive" >>./checksums.txt
+		calculate_checksums "$archive" >>"$cksum_file"
 	done
 )
 

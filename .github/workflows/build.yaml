@@ -14,8 +14,8 @@
     'if': |
       ${{ github.repository_owner == 'AdGuardSoftwareLimited' }}
     'outputs':
-      'app_version': ${{ steps.app_version.outputs.app_version }}
-      'source_date_epoch': ${{ steps.source_date_epoch.outputs.source_date_epoch }}
+      'app_version': ${{ steps.set_envs.outputs.app_version }}
+      'source_date_epoch': ${{ steps.set_envs.outputs.source_date_epoch }}
     'permissions':
       'contents': 'read'
       'id-token': 'write'
@@ -29,8 +29,8 @@
           #
           # See https://github.com/actions/checkout/issues/485#issuecomment-934422611.
           'persist-credentials': false
-      - 'name': 'Set source date epoch'
-        'id': 'source_date_epoch'
+      - 'name': "Set environment variables"
+        'id': 'set_envs'
         'run': |
           source_date_epoch=$(git log -1 --format=%ct)
           readonly source_date_epoch
@@ -40,9 +40,7 @@
           # Also expose the source date epoch as a job output, since the env
           # context is not available to the other jobs.
           echo "source_date_epoch=${source_date_epoch}" >> "$GITHUB_OUTPUT"
-      - 'name': 'Set app version'
-        'id': 'app_version'
-        'run': |
+
           app_version="$(env CHANNEL=${{ env.CHANNEL }} sh ./scripts/make/version.sh)"
           readonly app_version
 
@@ -134,7 +132,7 @@
         'with':
           'name': 'adguarddnscli-qa-windows'
           'path': |
-            ${{ env.DIST_DIR }}/AdGuardDNSCLI_windows_amd64
+            ${{ env.DIST_DIR }}/AdGuardDNSCLI_windows_*
   'SignWindowsEXE':
     'name': 'Sign Windows executables'
     'needs': 'BuildBinaries'
@@ -147,7 +145,7 @@
     'with':
       'team': 'go'
       'artifact-name': 'adguarddnscli-qa-windows'
-      'files': 'AdGuardDNSCLI/adguarddns-cli.exe'
+      'files': 'AdGuardDNSCLI_windows_*/AdGuardDNSCLI/adguarddns-cli.exe'
       'signed-artifact-name': 'adguarddnscli-qa-windows'
   'BuildWindowsMSI':
     'name': 'Build Windows MSI'
@@ -193,7 +191,7 @@
         'with':
           'name': 'adguarddnscli-qa-msi'
           'path': |
-            ${{ env.DIST_DIR }}/AdGuardDNSCLI_windows_amd64.msi
+            ${{ env.DIST_DIR }}/AdGuardDNSCLI_windows_*.msi
   'SignWindowsMSI':
     'name': 'Sign Windows MSI'
     'needs': 'BuildWindowsMSI'
@@ -206,7 +204,7 @@
     'with':
       'team': 'go'
       'artifact-name': 'adguarddnscli-qa-msi'
-      'files': 'AdGuardDNSCLI_windows_amd64.msi'
+      'files': 'AdGuardDNSCLI_windows_*.msi'
       'signed-artifact-name': 'adguarddnscli-qa-msi'
   'PackArtifacts':
     'name': 'Pack artifacts'
@@ -257,7 +255,8 @@
           'name': 'adguarddnscli-qa'
           'path': |
             ${{ env.DIST_DIR }}/*.*
-'name': 'Build QA Artifacts'
+            ${{ env.DIST_DIR }}/metadata/checksums.txt
+'name': 'Build QA artifacts'
 'on':
   'pull_request':
     'branches':

@@ -178,6 +178,6 @@ env \
 
 log 'writing versions'
 
-printf '%s\n' "$version" >"./${dist}/version.txt"
+printf '%s\n' "$version" >"${dist}/metadata/version.txt"
 
 log 'finished'
