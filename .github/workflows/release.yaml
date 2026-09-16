@@ -261,7 +261,6 @@
           'name': 'adguarddnscli-release'
           'path': |
             ${{ env.DIST_DIR }}/*.*
-            ${{ env.DIST_DIR }}/metadata/checksums.txt
   'PublishGitHubRelease':
     'if': |
       ${{

@@ -70,16 +70,13 @@ calculate_checksums() {
 	fi
 }
 
-metadir="${dist}/metadata"
-mkdir -p "$metadir"
-
 # Calculate the checksums of the files in a subshell with a different working
 # directory.  Don't use ls, because files matching one of the patterns may be
 # absent, which will make ls return with a non-zero status code.
 (
 	cd "./${dist}"
 
-	cksum_file="./metadata/checksums.txt"
+	cksum_file="./checksums.txt"
 
 	: >"$cksum_file"
 

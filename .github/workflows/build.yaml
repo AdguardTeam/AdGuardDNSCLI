@@ -71,7 +71,7 @@
             BASE_IMAGE=${{ env.BASE_IMAGE }}
             BRANCH=${{ github.ref_name }}
             CACHE_BUSTER=${{ inputs.cache_buster || '0' }}
-            CHANNEL="${{ env.CHANNEL }}"
+            CHANNEL=${{ env.CHANNEL }}
             DIST_DIR=${{ env.DIST_DIR }}
             OS=darwin
             REVISION=${{ github.sha }}
@@ -93,7 +93,7 @@
             BASE_IMAGE=${{ env.BASE_IMAGE }}
             BRANCH=${{ github.ref_name }}
             CACHE_BUSTER=${{ inputs.cache_buster || '0' }}
-            CHANNEL="${{ env.CHANNEL }}"
+            CHANNEL=${{ env.CHANNEL }}
             DIST_DIR=${{ env.DIST_DIR }}
             OS=linux
             REVISION=${{ github.sha }}
@@ -255,7 +255,6 @@
           'name': 'adguarddnscli-qa'
           'path': |
             ${{ env.DIST_DIR }}/*.*
-            ${{ env.DIST_DIR }}/metadata/checksums.txt
 'name': 'Build QA artifacts'
 'on':
   'pull_request':

@@ -176,8 +176,4 @@ env \
 	sh ./scripts/make/calc-checksums.sh \
 	;
 
-log 'writing versions'
-
-printf '%s\n' "$version" >"${dist}/metadata/version.txt"
-
 log 'finished'
