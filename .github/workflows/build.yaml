@@ -169,7 +169,7 @@
         'with':
           'name': 'adguarddnscli-qa-windows'
           'path': |
-            ${{ env.DIST_DIR }}/AdGuardDNSCLI_windows_amd64
+            ${{ env.DIST_DIR }}
       - 'name': 'Build MSI installer'
         'env':
           'APP_VERSION': ${{ needs.BuildBinaries.outputs.app_version }}
@@ -223,13 +223,13 @@
           #
           # See https://github.com/actions/checkout/issues/485#issuecomment-934422611.
           'persist-credentials': false
-      - 'name': 'Download Unix Artifacts'
+      - 'name': 'Download Unix artifacts'
         'uses': 'actions/download-artifact@v8'
         'with':
           'name': 'adguarddnscli-qa-unix'
           'path': |
             ${{ env.DIST_DIR }}
-      - 'name': 'Download MSI Artifact'
+      - 'name': 'Download MSI artifact'
         'uses': 'actions/download-artifact@v8'
         'with':
           'name': 'adguarddnscli-qa-msi'
