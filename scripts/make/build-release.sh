@@ -5,6 +5,9 @@
 # The commentary in this file is written with the assumption that the reader
 # only has superficial knowledge of the POSIX shell language and alike.
 # Experienced readers may find it overly verbose.
+#
+# It builds the artifacts for the specified platforms and signs the ones that
+# can be signed in place.
 
 # The default verbosity level is 0.  Show log messages if the caller requested
 # verbosity level greater than 0.  Show the environment and every command that
@@ -23,10 +26,6 @@ fi
 # By default, sign the packages, but allow users to skip that step.
 sign="${SIGN:-1}"
 readonly sign
-
-# By default, build the MSI packages, but allow users to skip that step.
-msi="${MSI:-1}"
-readonly msi
 
 # Exit the script if a pipeline fails (-e), prevent accidental filename
 # expansion (-f), and consider undefined variables as errors (-u).
@@ -93,14 +92,12 @@ readonly dist
 
 log "checking tools"
 
-# Make sure we fail gracefully if one of the tools we need is missing.
-for tool in gpg gzip sed tar zip; do
-	if ! command -v "$tool" >/dev/null; then
-		log "pieces don't fit, '$tool' not found"
+# Make sure we fail gracefully if the tool we need is missing.
+if ! command -v 'gpg' >/dev/null; then
+	log "pieces don't fit, 'gpg' not found"
 
-		exit 1
-	fi
-done
+	exit 1
+fi
 
 # Data section.  Arrange data into space-separated tables for read -r to read.
 # Use a hyphen for missing values.
@@ -130,6 +127,8 @@ sign() {
 	sign_os="$1"
 	sign_bin_path="$2"
 
+	log "signing $sign_bin_path"
+
 	if [ "$sign_os" != 'windows' ]; then
 		gpg --default-key "$gpg_key" \
 			--detach-sig --passphrase "$gpg_key_passphrase" \
@@ -138,42 +137,28 @@ sign() {
 	fi
 }
 
-# Function build builds the release for one platform.  It builds a binary and an
-# archive.
+# Function build builds the release for one platform.  It builds a binary and
+# prepares its directory for packing.
 build() {
 	# Get the arguments.  Here and below, use the "build_" prefix for all
 	# variables local to function build.
 	build_dir="${dist}/${1}/AdGuardDNSCLI" \
-		build_ar="$2" \
-		build_os="$3" \
-		build_arch="$4" \
+		build_os="$2" \
+		build_arch="$3" \
 		;
 
 	# Use the ".exe" filename extension if we build a Windows release.
 	if [ "$build_os" = 'windows' ]; then
-		build_output="./${build_dir}/adguarddns-cli.exe"
+		build_output="${build_dir}/adguarddns-cli.exe"
 	else
-		build_output="./${build_dir}/adguarddns-cli"
+		build_output="${build_dir}/adguarddns-cli"
 	fi
 
-	mkdir -p "./${build_dir}"
-
-	# Build the binary.
-	env \
-		GOARCH="$build_arch" \
-		GOOS="$os" \
-		VERBOSE="$((verbose - 1))" \
-		APP_VERSION="$version" \
-		OUT="$build_output" \
-		sh ./scripts/make/go-build.sh
-
-	log "$build_output"
-
-	sign "$build_os" "$build_output"
+	mkdir -p "${build_dir}"
 
 	# Prepare the build directory for archiving.
 	#
-	# TODO(e.burkov):  Add CHANGELOG.md and LICENSE.txt.
+	# TODO(e.burkov):  Add CHANGELOG.md.
 	cp ./README.md "$build_dir"
 	cp ./config.dist.yaml "$build_dir"
 
@@ -184,42 +169,18 @@ build() {
 		cp ./LICENSE "$build_dir"
 	fi
 
-	# Make archives.  Windows and macOS prefer ZIP archives; the rest, gzipped
-	# tarballs.
-	case "$build_os" in
-	'windows')
-		# TODO(e.burkov):  Consider building only MSI installers for Windows.
-		if [ "$msi" -eq 1 ]; then
-			env \
-				APP_VERSION="$version" \
-				VERBOSE="$verbose" \
-				sh ./scripts/make/build-msi.sh \
-				"$build_arch" \
-				"./${dist}/${build_ar}.msi" \
-				"$build_dir"
-		fi
+	# Build the binary.
+	env \
+		GOARCH="$build_arch" \
+		GOOS="$build_os" \
+		VERBOSE="$((verbose - 1))" \
+		APP_VERSION="$version" \
+		OUT="$build_output" \
+		sh ./scripts/make/go-build.sh
 
-		build_archive="./${dist}/${build_ar}.zip"
+	log "$build_output"
 
-		# TODO(a.garipov): Find an option similar to the -C option of tar for
-		# zip.
-		(cd "${dist}/${1}" && zip -9 -q -r "../../${build_archive}" "./AdGuardDNSCLI")
-		;;
-	'darwin')
-		build_archive="./${dist}/${build_ar}.zip"
-		# TODO(a.garipov): Find an option similar to the -C option of tar for
-		# zip.
-		(cd "${dist}/${1}" && zip -9 -q -r "../../${build_archive}" "./AdGuardDNSCLI")
-		;;
-	*)
-		build_archive="./${dist}/${build_ar}.tar.gz"
-		tar -C "./${dist}/${1}" -c -f - "./AdGuardDNSCLI" | gzip -9 - >"$build_archive"
-		;;
-	esac
-
-	# TODO(e.burkov):  Consider removing "./${build_dir}".
-
-	log "$build_archive"
+	sign "$build_os" "$build_output"
 }
 
 log "starting builds"
@@ -252,22 +213,8 @@ echo "$platforms" | while read -r os arch; do
 	fi
 
 	dir="AdGuardDNSCLI_${os}_${arch}"
-	# Name archive the same as the corresponding distribution directory.
-	ar="$dir"
 
-	build "$dir" "$ar" "$os" "$arch"
+	build "$dir" "$os" "$arch"
 done
-
-log "calculating checksums"
-
-env \
-	DIST_DIR="$dist" \
-	VERBOSE="$verbose" \
-	sh ./scripts/make/calc-checksums.sh \
-	;
-
-log "writing versions"
-
-printf '%s\n' "$version" >"./${dist}/version.txt"
 
 log "finished"

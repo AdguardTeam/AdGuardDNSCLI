@@ -27,7 +27,7 @@ readonly channel
 case "$channel" in
 'development')
 	# commit_number is the number of current commit within the branch.
-	commit_number="$(git rev-list --count master..HEAD --)"
+	commit_number="$(git rev-list --count origin/master..HEAD --)"
 	readonly commit_number
 
 	# The development builds are described with a combination of unset semantic
@@ -74,11 +74,11 @@ case "$channel" in
 		exit 1
 	fi
 
-	version="${current_branch#rc-}-rc.$(git rev-list --count "master"..HEAD)"
+	version="${current_branch#rc-}-rc.$(git rev-list --count "origin/master"..HEAD)"
 	;;
 *)
 	echo "invalid channel '$channel', supported values are \
-		'development', 'edge', 'release' and 'candidate'" 1>&2
+		'development', 'release' and 'candidate'" 1>&2
 	exit 1
 	;;
 esac

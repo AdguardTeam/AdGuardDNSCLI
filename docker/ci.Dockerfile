@@ -3,7 +3,7 @@
 # This comment is used to simplify checking local copies of the Dockerfile.
 # Bump this number every time a significant change is made to this Dockerfile.
 #
-# AdGuard-Project-Version: 13
+# AdGuard-Project-Version: 14
 
 # Dockerfile guidelines:
 #
@@ -67,6 +67,11 @@ EOF
 # Use fake BRANCH and REVISION values to both prevent git calls and also not
 # ruin the caching with ARGs.  IGNORE_NON_REPRODUCIBLE is set to 1 to make this
 # stage reproducible even when linters that query external sources fail.
+#
+# NOTE:  go-deps is necessary to download the modules of the linter tool
+# dependencies, so that the "go: downloading" messages are not treated as linter
+# output by the "run_linter -e" checks in ./scripts/make/go-lint.sh.  This may
+# happen in CI, where builds may receive a fresh cache mount.
 FROM dependencies AS linter
 ADD . /app
 WORKDIR /app
@@ -81,6 +86,7 @@ make \
 	IGNORE_NON_REPRODUCIBLE='1' \
 	REVISION='0000000000000000000000000000000000000000' \
 	VERBOSE=1 \
+	go-deps \
 	go-lint \
 	md-lint \
 	sh-lint \
@@ -163,59 +169,15 @@ ARG CACHE_BUSTER=0
 ARG TEST_REPORTS_DIR=/test-reports
 COPY --from=tester "$TEST_REPORTS_DIR" "$TEST_REPORTS_DIR"
 
-# The qa-builder stage is used to build QA artifacts.  It imports GPG keys and
-# runs the build-qa target.  Real BRANCH and REVISION must be used here.
-FROM dependencies AS qa-builder
-ARG APP_VERSION=""
-ARG BRANCH=master
-ARG CACHE_BUSTER=0
-ARG CHANNEL=development
-ARG REVISION=0000000000000000000000000000000000000000
-ARG SIGN=1
-ARG SOURCE_DATE_EPOCH=0
-ADD . /app
-WORKDIR /app
-RUN \
-	--mount=type=cache,id=gocache,target=/root/.cache/go-build \
-	--mount=type=cache,id=gopath,target=/go \
-	--mount=type=secret,id=GPG_KEY_PASSPHRASE,env=GPG_KEY_PASSPHRASE \
-	--mount=type=secret,id=GPG_SECRET_KEY,env=GPG_SECRET_KEY \
-<<-'EOF'
-set -e -f -o 'pipefail' -u -x
-
-# Import GPG key if provided
-if [ "${GPG_SECRET_KEY:-}" != '' ]; then
-    echo "$GPG_SECRET_KEY" | awk '{ gsub(/\\n/, "\n"); print; }' | gpg --import --batch --yes
-fi
-
-make \
-	APP_VERSION="${APP_VERSION}" \
-	BRANCH="${BRANCH}" \
-	CHANNEL="${CHANNEL}" \
-	GPG_KEY_PASSPHRASE="${GPG_KEY_PASSPHRASE}" \
-	PARALLELISM=1 \
-	REVISION="${REVISION}" \
-	SOURCE_DATE_EPOCH="$SOURCE_DATE_EPOCH" \
-	SIGN="${SIGN}" \
-	VERBOSE=2 \
-	build-qa \
-	;
-EOF
-
-# qa-builder-exporter exports the QA build artifacts to the host machine so that
-# they could be published.  This stage should only be used in a CI.
-FROM scratch AS qa-builder-exporter
-ARG CACHE_BUSTER=0
-ARG DIST_DIR="dist"
-COPY --from=qa-builder /app/$DIST_DIR /$DIST_DIR
-
 # The builder stage is used to build release artifacts.  It imports GPG keys and
 # runs the build-release target.  Real BRANCH and REVISION must be used here.
 FROM dependencies AS builder
+ARG ARCH=""
 ARG APP_VERSION=""
 ARG BRANCH=master
 ARG CACHE_BUSTER=0
 ARG CHANNEL=development
+ARG OS=""
 ARG REVISION=0000000000000000000000000000000000000000
 ARG SIGN=1
 ARG SOURCE_DATE_EPOCH=0
@@ -252,13 +214,16 @@ EOF
 # could be published.  This stage should only be used in a CI.
 FROM scratch AS builder-exporter
 ARG CACHE_BUSTER=0
-COPY --from=builder /app/dist /dist
+ARG DIST_DIR="dist"
+COPY --from=builder /app/${DIST_DIR} /${DIST_DIR}
 
-# msi-builder stage is used to build MSI files.
+# msi-builder stage is used to build MSI installers.
 FROM dependencies AS msi-builder
+ARG ARCH=""
 ARG APP_VERSION=""
 ARG CACHE_BUSTER=0
 ARG DIST_DIR="dist"
+ARG SOURCE_DATE_EPOCH=0
 ADD . /app
 WORKDIR /app
 RUN \
@@ -267,17 +232,13 @@ RUN \
 <<-'EOF'
 set -e -f -o 'pipefail' -u -x
 
-for arch in '386' 'amd64' 'arm64'; do
-	dir="AdGuardDNSCLI_windows_${arch}"
-
-	env \
-		APP_VERSION="${APP_VERSION}" \
-		VERBOSE=1 \
-		sh ./scripts/make/build-msi.sh \
-		"$arch" \
-		"./${DIST_DIR}/${dir}.msi" \
-		"./${DIST_DIR}/${dir}/AdGuardDNSCLI"
-done
+make \
+	APP_VERSION="${APP_VERSION}" \
+	ARCH="${ARCH}" \
+	SOURCE_DATE_EPOCH="$SOURCE_DATE_EPOCH" \
+	VERBOSE=2 \
+	build-msi \
+	;
 EOF
 
 # msi-builder-exporter exports the build artifacts to the host machine so that
@@ -285,4 +246,42 @@ EOF
 FROM scratch AS msi-builder-exporter
 ARG CACHE_BUSTER=0
 ARG DIST_DIR="dist"
-COPY --from=msi-builder /app/$DIST_DIR /$DIST_DIR
+COPY --from=msi-builder /app/${DIST_DIR} /${DIST_DIR}
+
+# The packer stage is used to pack the built and signed artifacts into archives.
+#
+# Use fake BRANCH and REVISION values to both prevent git calls and also not
+# ruin the caching with ARGs.  ARCH, OS, and SOURCE_DATE_EPOCH are not passed to
+# pack-release, but they are declared here on purpose: they define the artifacts
+# produced by the build stages, so changing them must invalidate this stage's
+# cache as well.
+FROM dependencies AS packer
+ARG ARCH=""
+ARG APP_VERSION=""
+ARG BRANCH=master
+ARG CACHE_BUSTER=0
+ARG DIST_DIR="dist"
+ARG OS=""
+ARG REVISION=0000000000000000000000000000000000000000
+ARG SOURCE_DATE_EPOCH=0
+ADD . /app
+WORKDIR /app
+RUN <<-'EOF'
+set -e -f -o 'pipefail' -u -x
+
+make \
+	APP_VERSION="${APP_VERSION}" \
+	BRANCH="${BRANCH}" \
+	DIST_DIR="${DIST_DIR}" \
+	REVISION="${REVISION}" \
+	VERBOSE=2 \
+	pack-release \
+	;
+EOF
+
+# packer-exporter exports the packed artifacts to the host machine so that they
+# could be published.  This stage should only be used in a CI.
+FROM scratch AS packer-exporter
+ARG CACHE_BUSTER=0
+ARG DIST_DIR="dist"
+COPY --from=packer /app/${DIST_DIR} /${DIST_DIR}

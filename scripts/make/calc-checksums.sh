@@ -6,8 +6,8 @@
 # only has superficial knowledge of the POSIX shell language and alike.
 # Experienced readers may find it overly verbose.
 #
-# It calculates SHA-256 checksums for the archives in the distribution
-# directory and writes them into checksums.txt.
+# It calculates SHA-256 checksums for the archives in the distribution directory
+# and writes them into checksums.txt.
 
 # The default verbosity level is 0.  Show log messages if the caller requested
 # verbosity level greater than 0.  Show the environment and every command that
@@ -76,7 +76,9 @@ calculate_checksums() {
 (
 	cd "./${dist}"
 
-	: >./checksums.txt
+	cksum_file="./checksums.txt"
+
+	: >"$cksum_file"
 
 	for archive in ./*.zip ./*.tar.gz ./*.msi; do
 		# Make sure that we don't try to calculate a checksum for a glob pattern
@@ -85,7 +87,7 @@ calculate_checksums() {
 			continue
 		fi
 
-		calculate_checksums "$archive" >>./checksums.txt
+		calculate_checksums "$archive" >>"$cksum_file"
 	done
 )
 
