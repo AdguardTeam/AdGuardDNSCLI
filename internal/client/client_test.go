@@ -86,7 +86,7 @@ func newTestClock(tb testing.TB, nowPtr *time.Time) (c *testClock, ch chan<- tim
 	}
 
 	return &testClock{
-		Clock:   faketime.Clock{OnNow: onNow},
+		OnNow:   onNow,
 		onAfter: onAfter,
 	}, after
 }

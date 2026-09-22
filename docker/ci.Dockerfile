@@ -28,7 +28,7 @@
 #    needed.  Keep it in sync with the files in .github/workflows/.
 
 # NOTE:  Keep in sync with the files in .github/workflows/.
-ARG BASE_IMAGE=adguard/go-builder:1.26.8--1
+ARG BASE_IMAGE=adguard/go-builder:1.27.1--1
 
 # The dependencies stage is needed to install packages and tool dependencies.
 # This is also where binaries like osslsigncode, which may be required for tests

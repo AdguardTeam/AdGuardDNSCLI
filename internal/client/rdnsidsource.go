@@ -230,9 +230,7 @@ func (r *RDNSIDSource) sendDNSRequest(
 	}
 
 	req := &dns.Msg{
-		MsgHdr: dns.MsgHdr{
-			Id: dns.Id(),
-		},
+		Id:       dns.Id(),
 		Compress: true,
 		Question: []dns.Question{{
 			Name:   dns.Fqdn(rAddr),
