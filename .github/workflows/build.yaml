@@ -30,6 +30,9 @@
           # See https://github.com/actions/checkout/issues/485#issuecomment-934422611.
           'persist-credentials': false
       - 'name': "Set environment variables"
+        'env':
+          'REF': ${{ github.ref }}
+          'HEAD_REF': ${{ github.head_ref }}
         'id': 'set_envs'
         'run': |
           #!/bin/sh
@@ -37,7 +40,7 @@
           set -e -f -u -x
 
           # TODO(e.burkov):  !! rm
-          echo "$github.ref $github.head_ref"
+          echo "${REF} ${HEAD_REF}"
 
           source_date_epoch=$(git log -1 --format=%ct)
           readonly source_date_epoch
