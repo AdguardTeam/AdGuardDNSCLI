@@ -3,8 +3,8 @@
     ${{ vars.BASE_IMAGE || 'adguard/go-builder:1.27.1--1' }}
   'CHANNEL': |-
     ${{ case(
-      startsWith(github.ref_name, 'release-v'), 'release',
-      startsWith(github.ref_name, 'rc-v'), 'candidate',
+      startsWith(github.head_ref, 'release-v'), 'release',
+      startsWith(github.head_ref, 'rc-v'), 'candidate',
       'development'
     ) }}
   'DIST_DIR': |-
@@ -30,18 +30,8 @@
           # See https://github.com/actions/checkout/issues/485#issuecomment-934422611.
           'persist-credentials': false
       - 'name': "Set environment variables"
-        'env':
-          'REF': ${{ github.ref }}
-          'HEAD_REF': ${{ github.head_ref }}
         'id': 'set_envs'
         'run': |
-          #!/bin/sh
-
-          set -e -f -u -x
-
-          # TODO(e.burkov):  !! rm
-          echo "${REF} ${HEAD_REF}"
-
           source_date_epoch=$(git log -1 --format=%ct)
           readonly source_date_epoch
 
@@ -79,7 +69,6 @@
             APP_VERSION=${{ env.APP_VERSION }}
             ARCH=amd64 arm64
             BASE_IMAGE=${{ env.BASE_IMAGE }}
-            BRANCH=${{ github.ref_name }}
             CACHE_BUSTER=${{ inputs.cache_buster || '0' }}
             CHANNEL=${{ env.CHANNEL }}
             DIST_DIR=${{ env.DIST_DIR }}
@@ -101,7 +90,6 @@
             APP_VERSION=${{ env.APP_VERSION }}
             ARCH=amd64
             BASE_IMAGE=${{ env.BASE_IMAGE }}
-            BRANCH=${{ github.ref_name }}
             CACHE_BUSTER=${{ inputs.cache_buster || '0' }}
             CHANNEL=${{ env.CHANNEL }}
             DIST_DIR=${{ env.DIST_DIR }}
@@ -129,7 +117,6 @@
             APP_VERSION=${{ env.APP_VERSION }}
             ARCH=amd64
             BASE_IMAGE=${{ env.BASE_IMAGE }}
-            BRANCH=${{ github.ref_name }}
             CACHE_BUSTER=${{ inputs.cache_buster || '0' }}
             CHANNEL="development"
             DIST_DIR=${{ env.DIST_DIR }}
