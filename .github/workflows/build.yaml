@@ -25,6 +25,8 @@
         'with':
           # Fetch all branches and tags to make the version script work.
           'fetch-depth': 0
+          # Prevent detached HEAD state.
+          'ref': ${{ github.head_ref }}
           # Set to false to avoid GITHUB_TOKEN leaking.
           #
           # See https://github.com/actions/checkout/issues/485#issuecomment-934422611.
@@ -41,7 +43,7 @@
           # context is not available to the other jobs.
           echo "source_date_epoch=${source_date_epoch}" >> "$GITHUB_OUTPUT"
 
-          app_version="$(env CHANNEL=${{ env.CHANNEL }} BRANCH=${{ github.head_ref }} sh ./scripts/make/version.sh)"
+          app_version="$(env CHANNEL=${{ env.CHANNEL }} sh ./scripts/make/version.sh)"
           readonly app_version
 
           echo "APP_VERSION=${app_version}" >> "$GITHUB_ENV"
@@ -157,6 +159,10 @@
     'steps':
       - 'uses': 'actions/checkout@v6'
         'with':
+          # Fetch all branches and tags to make the version script work.
+          'fetch-depth': 0
+          # Prevent detached HEAD state.
+          'ref': ${{ github.head_ref }}
           # Set to false to avoid GITHUB_TOKEN leaking.
           #
           # See https://github.com/actions/checkout/issues/485#issuecomment-934422611.
@@ -216,6 +222,10 @@
     'steps':
       - 'uses': 'actions/checkout@v6'
         'with':
+          # Fetch all branches and tags to make the version script work.
+          'fetch-depth': 0
+          # Prevent detached HEAD state.
+          'ref': ${{ github.head_ref }}
           # Set to false to avoid GITHUB_TOKEN leaking.
           #
           # See https://github.com/actions/checkout/issues/485#issuecomment-934422611.
