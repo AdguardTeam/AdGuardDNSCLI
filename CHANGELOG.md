@@ -277,11 +277,12 @@ See also the [v0.0.2 GitHub milestone][ms-v0.0.2].
 - Everything!
 
 <!--
-[Unreleased]: https://github.com/AdguardTeam/AdGuardDNSCLI/compare/v0.2.1...HEAD
-[v0.2.1]:     https://github.com/AdguardTeam/AdGuardDNSCLI/compare/v0.2.0...v0.2.1
+[Unreleased]: https://github.com/AdguardTeam/AdGuardDNSCLI/compare/v0.2.2...HEAD
+[v0.2.2]:     https://github.com/AdguardTeam/AdGuardDNSCLI/compare/v0.2.1...v0.2.2
 -->
 
-[Unreleased]: https://github.com/AdguardTeam/AdGuardDNSCLI/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/AdguardTeam/AdGuardDNSCLI/compare/v0.2.1...HEAD
+[v0.2.1]:     https://github.com/AdguardTeam/AdGuardDNSCLI/compare/v0.2.0...v0.2.1
 [v0.2.0]:     https://github.com/AdguardTeam/AdGuardDNSCLI/compare/v0.1.1...v0.2.0
 [v0.1.1]:     https://github.com/AdguardTeam/AdGuardDNSCLI/compare/v0.1.0...v0.1.1
 [v0.1.0]:     https://github.com/AdguardTeam/AdGuardDNSCLI/compare/v0.0.4...v0.1.0
