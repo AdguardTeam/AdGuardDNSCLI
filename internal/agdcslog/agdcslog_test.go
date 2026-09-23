@@ -271,13 +271,9 @@ func TestSyslogHandler_Handle_race(t *testing.T) {
 
 	wg := &sync.WaitGroup{}
 	for range numGoroutine {
-		wg.Add(1)
-
-		go func() {
-			defer wg.Done()
-
+		wg.Go(func() {
 			logger.Info("test message", "attr", "abc")
-		}()
+		})
 	}
 
 	wg.Wait()

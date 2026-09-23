@@ -83,7 +83,7 @@ See [`CONTRIBUTING.md`][contr] for more details on how to contribute.
 
 ### <a href="#dev-start" id="dev-start" name="dev-start">Development quick start</a>
 
-You will need Go 1.25 or later. First, register our pre-commit hooks:
+You will need Go 1.27 or later. First, register our pre-commit hooks:
 
 ```sh
 make init
