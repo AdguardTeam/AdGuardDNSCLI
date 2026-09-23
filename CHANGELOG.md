@@ -7,14 +7,22 @@ The format is based on [*Keep a Changelog*](https://keepachangelog.com/en/1.0.0/
 ## [Unreleased]
 
 <!--
-## [v0.2.1] - 2026-08-01 (APPROX.)
+## [v0.2.2] - 2026-10-22 (APPROX.)
 
-See also the [v0.2.1 GitHub milestone][ms-v0.2.1].
+See also the [v0.2.2 GitHub milestone][ms-v0.2.2].
 
-[ms-v0.2.1]: https://github.com/AdguardTeam/AdGuardDNSCLI/milestone/8?closed=1
+[ms-v0.2.2]: https://github.com/AdguardTeam/AdGuardDNSCLI/milestone/9?closed=1
 
 NOTE: Add new changes BELOW THIS COMMENT.
 -->
+
+<!--
+NOTE: Add new changes ABOVE THIS COMMENT.
+-->
+
+## [v0.2.1] - 2026-09-24
+
+See also the [v0.2.1 GitHub milestone][ms-v0.2.1].
 
 ### Security
 
@@ -34,10 +42,7 @@ NOTE: Add new changes BELOW THIS COMMENT.
     ```
 
 [go-1.27.1]: https://groups.google.com/g/golang-announce/c/QiTRm-HGGtI
-
-<!--
-NOTE: Add new changes ABOVE THIS COMMENT.
--->
+[ms-v0.2.1]: https://github.com/AdguardTeam/AdGuardDNSCLI/milestone/8?closed=1
 
 ## [v0.2.0] - 2026-07-15
 
