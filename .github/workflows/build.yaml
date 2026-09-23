@@ -2,11 +2,7 @@
   'BASE_IMAGE': |-
     ${{ vars.BASE_IMAGE || 'adguard/go-builder:1.27.1--1' }}
   'CHANNEL': |-
-    ${{ case(
-      startsWith(github.ref_name, 'release-v'), 'release',
-      startsWith(github.ref_name, 'rc-v'), 'candidate',
-      'development'
-    ) }}
+    development
   'DIST_DIR': |-
     dist
 'jobs':

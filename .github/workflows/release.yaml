@@ -4,6 +4,7 @@
   'CHANNEL': |-
     ${{ case(
       startsWith(github.ref_name, 'release-v'), 'release',
+      startsWith(github.ref_name, 'beta-v'), 'beta',
       startsWith(github.ref_name, 'rc-v'), 'candidate',
       'development'
     ) }}

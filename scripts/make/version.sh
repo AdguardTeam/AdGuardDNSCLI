@@ -37,7 +37,7 @@ case "$channel" in
 	#
 	version="v0.0.0-dev.${commit_number}+$(git rev-parse --short HEAD)"
 	;;
-'release')
+'beta' | 'release')
 	# current_desc is the description of the current git commit.  If the
 	# current commit is tagged, git describe will show the tag.
 	current_desc="$(git describe)"
