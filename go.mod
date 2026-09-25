@@ -3,7 +3,8 @@ module github.com/AdguardTeam/AdGuardDNSCLI
 go 1.27.1
 
 require (
-	github.com/AdguardTeam/dnsproxy v0.84.2
+	// TODO(f.setrakov): !! Upd to tag.
+	github.com/AdguardTeam/dnsproxy v0.84.3-0.20260923110647-63629704191b
 	github.com/AdguardTeam/golibs v0.35.16
 	github.com/c2h5oh/datasize v0.0.0-20231215233829-aa82cc1e6500
 	github.com/google/renameio/v2 v2.0.2
@@ -24,6 +25,7 @@ require (
 	github.com/ameshkov/dnsstamps v1.0.3 // indirect
 	github.com/anthropics/anthropic-sdk-go v1.75.0 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
+	github.com/beefsack/go-rate v0.0.0-20220214233405-116f4ca011a0 // indirect
 	github.com/bluele/gcache v0.0.2 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.10.2 // indirect
 	github.com/buger/jsonparser v1.6.1 // indirect
