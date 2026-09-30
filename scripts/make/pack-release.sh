@@ -113,7 +113,25 @@ pack() {
 	# tarballs.  Name an archive the same as the corresponding distribution
 	# directory.
 	case "$pack_os" in
-	'darwin' | 'windows')
+	'darwin')
+		# Make the binary executable as this script may be run independently.
+		chmod +x "./${dist}/${1}/AdGuardDNSCLI/adguarddns-cli"
+
+		pack_archive="./${dist}/${1}.zip"
+
+		# Remove the previous archive, if any, because zip updates the existing
+		# archives instead of recreating them.
+		rm -f "$pack_archive"
+
+		# Pack in a subshell with a different working directory, since zip has no
+		# option similar to the -C one of tar.  The archive is placed into the
+		# parent directory of the build one.
+		(cd "$pack_dir" && zip -9 -q -r "../${1}.zip" './AdGuardDNSCLI')
+		;;
+	'windows')
+		# Make the binary executable as this script may be run independently.
+		chmod +x "./${dist}/${1}/AdGuardDNSCLI/adguarddns-cli.exe"
+
 		pack_archive="./${dist}/${1}.zip"
 
 		# Remove the previous archive, if any, because zip updates the existing
@@ -126,6 +144,9 @@ pack() {
 		(cd "$pack_dir" && zip -9 -q -r "../${1}.zip" './AdGuardDNSCLI')
 		;;
 	*)
+		# Make the binary executable as this script may be run independently.
+		chmod +x "./${dist}/${1}/AdGuardDNSCLI/adguarddns-cli"
+
 		pack_archive="./${dist}/${1}.tar.gz"
 		tar -C "$pack_dir" -c -f - './AdGuardDNSCLI' | gzip -9 - >"$pack_archive"
 		;;

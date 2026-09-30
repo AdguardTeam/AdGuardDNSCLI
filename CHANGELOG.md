@@ -20,7 +20,7 @@ NOTE: Add new changes BELOW THIS COMMENT.
 NOTE: Add new changes ABOVE THIS COMMENT.
 -->
 
-## [v0.2.1] - 2026-09-24
+## [v0.2.1] - 2026-10-01
 
 See also the [v0.2.1 GitHub milestone][ms-v0.2.1].
 
