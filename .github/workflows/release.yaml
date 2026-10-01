@@ -279,7 +279,7 @@
       'draft': true
       'tag_name': ${{ github.ref_name }}
       'team': 'go'
-      'target_repo': 'AdguardTeam/adguarddnscli'
+      'target_repo': 'AdguardTeam/AdGuardDNSCLI'
 'name': 'Build release'
 'on':
   # TODO(d.kolyshev): Add push master, release-v, rc-v.
