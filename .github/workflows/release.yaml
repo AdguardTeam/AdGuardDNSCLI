@@ -266,7 +266,9 @@
         (github.ref_type == 'tag' || github.event_name == 'workflow_dispatch')
         && github.repository_owner == 'AdGuardSoftwareLimited'
       }}
-    'needs': 'PackArtifacts'
+    'needs':
+      - 'BuildBinaries'
+      - 'PackArtifacts'
     'permissions':
       # Download the artifact (release write goes via the Octopass token).
       'contents': 'read'
@@ -276,7 +278,7 @@
     'with':
       'artifact_name': 'adguarddnscli-release'
       'draft': true
-      'tag_name': ${{ github.ref_name }}
+      'tag_name': ${{ needs.BuildBinaries.outputs.app_version }}
       'team': 'go'
       'target_repo': 'AdguardTeam/AdGuardDNSCLI'
 'name': 'Build release'
