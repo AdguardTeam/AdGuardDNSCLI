@@ -30,6 +30,10 @@ See also the [v0.2.1 GitHub milestone][ms-v0.2.1].
 
 - AdGuard DNS CLI is now more resistant to resource exhaustion attacks when using DNS-over-QUIC.
 
+### Removed
+
+- The support for macOS 13 Ventura, see [Go 1.27 release notes][go-1.27.1-notes].
+
 ### Added
 
 - A Debug HTTP API for runtime profiling via `pprof`.  The API serves `pprof` endpoints under the `/private/pprof/` path and is disabled by default.  To enable it, configure the `debug.pprof` object in the configuration file:
@@ -41,8 +45,9 @@ See also the [v0.2.1 GitHub milestone][ms-v0.2.1].
             port: 6060
     ```
 
-[go-1.27.1]: https://groups.google.com/g/golang-announce/c/QiTRm-HGGtI
-[ms-v0.2.1]: https://github.com/AdguardTeam/AdGuardDNSCLI/milestone/8?closed=1
+[go-1.27.1]:       https://groups.google.com/g/golang-announce/c/QiTRm-HGGtI
+[go-1.27.1-notes]: https://go.dev/doc/go1.27#darwin
+[ms-v0.2.1]:       https://github.com/AdguardTeam/AdGuardDNSCLI/milestone/8?closed=1
 
 ## [v0.2.0] - 2026-07-15
 
