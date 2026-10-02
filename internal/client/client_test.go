@@ -128,8 +128,8 @@ func newComparableUpstreamConstructor() (uc *testUpstreamConstructor) {
 			return addr
 		},
 		OnClose: func() (err error) { return nil },
-		OnExchange: func(req *dns.Msg) (resp *dns.Msg, err error) {
-			panic(testutil.UnexpectedCall(req))
+		OnExchange: func(ctx context.Context, req *dns.Msg) (resp *dns.Msg, err error) {
+			panic(testutil.UnexpectedCall(ctx, req))
 		},
 	}
 
