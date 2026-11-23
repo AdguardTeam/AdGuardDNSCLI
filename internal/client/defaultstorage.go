@@ -18,6 +18,7 @@ import (
 	"github.com/AdguardTeam/golibs/netutil"
 	"github.com/AdguardTeam/golibs/service"
 	"github.com/AdguardTeam/golibs/timeutil"
+	"github.com/c2h5oh/datasize"
 )
 
 // unit is a convenience alias for an empty struct.
@@ -71,7 +72,7 @@ type DefaultStorageConfig struct {
 
 	// CacheSize is the size of the dynamically created custom upstream cache.
 	// It must be positive if CacheEnabled is true.
-	CacheSize int
+	CacheSize datasize.ByteSize
 }
 
 // DefaultStorage is a default implementation of the [Storage] interface.
@@ -143,7 +144,7 @@ func NewDefaultStorage(c *DefaultStorageConfig) (s *DefaultStorage) {
 				conf:         cliConf,
 				prefix:       prefix,
 				domain:       domain,
-				cacheSize:    int(c.CacheSize),
+				cacheSize:    c.CacheSize,
 				cacheEnabled: c.CacheEnabled,
 			})
 		}

@@ -66,8 +66,7 @@ func newClientStorage(
 		// TODO(e.burkov):  Consider making configurable.
 		Identifiable: netutil.SubnetSetFunc(client.IsIdentifiable),
 		CleanupIvl:   defaultClientCleanupIvl,
-		// #nosec G115 -- The value is validated to not exceed [math.MaxInt].
-		CacheSize:    int(cacheConf.ClientSize),
+		CacheSize:    cacheConf.ClientSize,
 		CacheEnabled: cacheConf.Enabled,
 	}
 
@@ -121,8 +120,7 @@ func (cs staticClients) addStaticClient(
 	conf *proxy.UpstreamConfig,
 	c *cacheConfig,
 ) {
-	// #nosec G115 -- The value is validated to not exceed [math.MaxInt].
-	upsConf := proxy.NewCustomUpstreamConfig(conf, c.Enabled, int(c.ClientSize), false)
+	upsConf := proxy.NewCustomUpstreamConfig(conf, c.Enabled, c.ClientSize, false)
 
 	cliConf, ok := cs[pref]
 	if !ok {

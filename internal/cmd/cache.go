@@ -26,8 +26,7 @@ type cacheConfig struct {
 func (c *cacheConfig) toInternal() (conf *dnssvc.CacheConfig) {
 	return &dnssvc.CacheConfig{
 		Enabled: c.Enabled,
-		// #nosec G115 -- The value is validated to not exceed [math.MaxInt].
-		Size: int(c.Size),
+		Size:    c.Size,
 	}
 }
 

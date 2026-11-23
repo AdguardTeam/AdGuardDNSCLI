@@ -14,6 +14,7 @@ import (
 	"github.com/AdguardTeam/golibs/errors"
 	"github.com/AdguardTeam/golibs/netutil"
 	"github.com/AdguardTeam/golibs/netutil/urlutil"
+	"github.com/c2h5oh/datasize"
 )
 
 // Constants for valid encrypted DNS upstream schemes.
@@ -120,7 +121,7 @@ func newAutodeviceClient(
 	c *AutodeviceUpstreamConfig,
 	upsCons UpstreamConstructor,
 	cacheEnabled bool,
-	cacheSize int,
+	cacheSize datasize.ByteSize,
 ) (cli *autodeviceClient, err error) {
 	upsConf, err := c.toUpstreamConfig(hid.ID, upsCons)
 	if err != nil {
@@ -150,7 +151,7 @@ type storedAutodeviceClient struct {
 	conf         *AutodeviceUpstreamConfig
 	prefix       netip.Prefix
 	domain       string
-	cacheSize    int
+	cacheSize    datasize.ByteSize
 	cacheEnabled bool
 }
 
